@@ -34,11 +34,18 @@ export interface EnvironmentConfig {
   generateHtmlReport: boolean;
 
   // Database
+  dbEnabled: boolean;
   postgresHost: string;
   postgresPort: number;
   postgresUser: string;
   postgresPassword: string;
   postgresDatabase: string;
+
+  // CTI (Computer Telephony Integration)
+  ctiMode: 'mock' | 'disabled';
+
+  // Offline Sync
+  offlineMode: 'mock' | 'disabled';
 
   // Logging
   logLevel: 'debug' | 'info' | 'warn' | 'error';
@@ -91,11 +98,18 @@ export function getEnvConfig(): EnvironmentConfig {
     generateHtmlReport: parseBoolean(process.env.GENERATE_HTML_REPORT, true),
 
     // Database
+    dbEnabled: parseBoolean(process.env.DB_ENABLED, true),
     postgresHost: process.env.POSTGRES_HOST || 'localhost',
     postgresPort: parseInt(process.env.POSTGRES_PORT, 5432),
     postgresUser: process.env.POSTGRES_USER || 'odoo',
     postgresPassword: process.env.POSTGRES_PASSWORD || 'odoo',
     postgresDatabase: process.env.POSTGRES_DATABASE || 'hora_qa_db',
+
+    // CTI
+    ctiMode: (process.env.CTI_MODE as 'mock' | 'disabled') || 'mock',
+
+    // Offline Sync
+    offlineMode: (process.env.OFFLINE_MODE as 'mock' | 'disabled') || 'mock',
 
     // Logging
     logLevel: (process.env.LOG_LEVEL as EnvironmentConfig['logLevel']) || 'info',

@@ -20,7 +20,8 @@ module.exports = {
     format: [
       'progress-bar',
       'json:reports/cucumber/cucumber.json',
-      'html:reports/cucumber/cucumber-report.html'
+      'html:reports/cucumber/cucumber-report.html',
+      'allure-cucumberjs/reporter'
     ],
     
     // Formatting options

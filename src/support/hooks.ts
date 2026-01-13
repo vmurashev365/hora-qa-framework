@@ -151,7 +151,7 @@ Before({ timeout: 60000 }, async function (this: CustomWorld, scenario) {
   }
 
   // Initialize Database Client (if enabled)
-  if (process.env.DB_ENABLED === 'true') {
+  if (config.dbEnabled) {
     try {
       this.dbClient = PgClient.getInstance({
         host: config.postgresHost,
@@ -167,7 +167,7 @@ Before({ timeout: 60000 }, async function (this: CustomWorld, scenario) {
   }
 
   // Initialize CTI Mock Client (if enabled)
-  if (process.env.CTI_MODE === 'mock') {
+  if (config.ctiMode === 'mock') {
     try {
       this.ctiClient = new AsteriskMockClient();
       await this.ctiClient.connect();
@@ -178,7 +178,7 @@ Before({ timeout: 60000 }, async function (this: CustomWorld, scenario) {
   }
 
   // Initialize Offline Sync Mock Client (if enabled)
-  if (process.env.OFFLINE_MODE === 'mock') {
+  if (config.offlineMode === 'mock') {
     try {
       const dbName = `test-offline-${Date.now()}`;
       this.offlineClient = new CouchClient(dbName);

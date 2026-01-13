@@ -89,14 +89,35 @@ Then(
       throw new Error('Database client not initialized. Ensure DB_ENABLED=true in environment.');
     }
 
-    const vehicle = await this.dbClient.getVehicleWithDriver(plate);
-    if (!vehicle) {
-      throw new Error(`Vehicle with plate "${plate}" not found in database`);
-    }
-    if (!vehicle.driver_name?.includes(driverName)) {
-      throw new Error(
-        `Expected vehicle "${plate}" to have driver "${driverName}", but got "${vehicle.driver_name || 'no driver'}"`
-      );
+    // Retry mechanism to handle async replication delay between UI and DB
+    const maxRetries = 5;
+    const retryDelay = 1000; // 1 second
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      const vehicle = await this.dbClient.getVehicleWithDriver(plate);
+      
+      if (!vehicle) {
+        if (attempt === maxRetries) {
+          throw new Error(`Vehicle with plate "${plate}" not found in database after ${maxRetries} attempts`);
+        }
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+        continue;
+      }
+      
+      if (vehicle.driver_name?.includes(driverName)) {
+        // Success!
+        return;
+      }
+      
+      // Driver mismatch - retry if not last attempt
+      if (attempt < maxRetries) {
+        console.log(`⏳ Attempt ${attempt}/${maxRetries}: Driver not yet synced to DB (expected "${driverName}", got "${vehicle.driver_name || 'no driver'}")`);
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+      } else {
+        throw new Error(
+          `Expected vehicle "${plate}" to have driver "${driverName}", but got "${vehicle.driver_name || 'no driver'}" after ${maxRetries} attempts`
+        );
+      }
     }
   }
 );
