@@ -3,18 +3,25 @@
  * Lifecycle hooks for browser management and test setup/teardown
  */
 
-import { Before, After, BeforeAll, AfterAll, Status } from '@cucumber/cucumber';
+import { Before, After, BeforeAll, AfterAll, BeforeStep, AfterStep, Status } from '@cucumber/cucumber';
 import { chromium, Browser } from 'playwright';
 import { CustomWorld } from './custom-world';
 import { getEnvConfig } from './env';
 import { OdooJsonRpcClient } from '../api/clients/OdooJsonRpcClient';
 import { RestApiClient } from '../api/clients/RestApiClient';
 import { FleetEndpoints } from '../api/endpoints/FleetEndpoints';
+import { PgClient } from '../db/PgClient';
+import { AsteriskMockClient } from '../api/clients/AsteriskMockClient';
+import { CouchClient } from '../db/CouchClient';
 import * as fs from 'fs';
 import * as path from 'path';
 
 // Shared browser instance across all scenarios
 let browser: Browser;
+
+// Step timing diagnostics
+let stepStartTime: number;
+const DEBUG_TIMING = process.env.DEBUG_TIMING === 'true';
 
 /**
  * BeforeAll Hook
@@ -52,7 +59,7 @@ BeforeAll(async function () {
  * Before Hook
  * Creates new context and page for each scenario
  */
-Before(async function (this: CustomWorld, scenario) {
+Before({ timeout: 60000 }, async function (this: CustomWorld, scenario) {
   const config = getEnvConfig();
   
   // Store scenario metadata
@@ -96,9 +103,89 @@ Before(async function (this: CustomWorld, scenario) {
     await this.odooApi.authenticate(config.odooDatabase, config.odooUsername, config.odooPassword);
     this.fleetEndpoints = new FleetEndpoints(this.odooApi);
     console.log('✅ API clients initialized');
-  } catch (error) {
+    
+    // Cleanup test vehicles BEFORE scenario (ensure clean state)
+    try {
+      const testPatterns = ['MD-INT-TEST-%', 'MD-E2E-%', 'MD-AUDIT-%', 'MD-TEST-%', 'MD-DRV-%', 'MD-CTI-%', 'MD-OFF-%', 'MD-API-%', 'MD-BATCH-%', 'MD-CONFLICT-%'];
+      let totalDeleted = 0;
+      
+      for (const pattern of testPatterns) {
+        const vehicles = await this.fleetEndpoints.searchVehiclesByPlate(pattern.replace('%', ''));
+        for (const vehicle of vehicles) {
+          try {
+            // First, delete driver assignment logs to avoid FK constraint
+            const assignmentLogs = await this.odooApi.search('fleet.vehicle.assignation.log', [['vehicle_id', '=', vehicle.id]]);
+            if (assignmentLogs.length > 0) {
+              await this.odooApi.execute('fleet.vehicle.assignation.log', 'unlink', [assignmentLogs]);
+            }
+            
+            // Delete odometer records
+            const odometerRecords = await this.odooApi.search('fleet.vehicle.odometer', [['vehicle_id', '=', vehicle.id]]);
+            if (odometerRecords.length > 0) {
+              await this.odooApi.execute('fleet.vehicle.odometer', 'unlink', [odometerRecords]);
+            }
+            
+            // Now delete the vehicle
+            await this.odooApi.execute('fleet.vehicle', 'unlink', [[vehicle.id]]);
+            totalDeleted++;
+          } catch {
+            // Try archiving if delete fails
+            try {
+              await this.odooApi.execute('fleet.vehicle', 'write', [[vehicle.id], { active: false }]);
+            } catch {
+              // Ignore
+            }
+          }
+        }
+      }
+      
+      if (totalDeleted > 0) {
+        console.log(`🧹 Pre-test cleanup: removed ${totalDeleted} test vehicles`);
+      }
+    } catch (error) {
+      console.log(`⚠️ Pre-test cleanup failed: ${error}`);
+    }
+  } catch {
     console.log(`⚠️ API authentication deferred (will authenticate on first API step)`);
     this.fleetEndpoints = new FleetEndpoints(this.odooApi);
+  }
+
+  // Initialize Database Client (if enabled)
+  if (process.env.DB_ENABLED === 'true') {
+    try {
+      this.dbClient = PgClient.getInstance({
+        host: config.postgresHost,
+        port: config.postgresPort,
+        user: config.postgresUser,
+        password: config.postgresPassword,
+        database: config.postgresDatabase,
+      });
+      console.log('✅ Database client initialized');
+    } catch (error) {
+      console.log(`⚠️ Database client initialization failed: ${error}`);
+    }
+  }
+
+  // Initialize CTI Mock Client (if enabled)
+  if (process.env.CTI_MODE === 'mock') {
+    try {
+      this.ctiClient = new AsteriskMockClient();
+      await this.ctiClient.connect();
+      console.log('✅ CTI mock client initialized');
+    } catch (error) {
+      console.log(`⚠️ CTI client initialization failed: ${error}`);
+    }
+  }
+
+  // Initialize Offline Sync Mock Client (if enabled)
+  if (process.env.OFFLINE_MODE === 'mock') {
+    try {
+      const dbName = `test-offline-${Date.now()}`;
+      this.offlineClient = new CouchClient(dbName);
+      console.log('✅ Offline sync client initialized');
+    } catch (error) {
+      console.log(`⚠️ Offline client initialization failed: ${error}`);
+    }
   }
 
   // Clear test data from previous scenario
@@ -151,6 +238,56 @@ After(async function (this: CustomWorld, scenario) {
   if (this.context) {
     await this.context.close().catch(() => {});
   }
+
+  // Cleanup CTI mock client
+  if (this.ctiClient) {
+    try {
+      this.ctiClient.clearLog();
+      if (this.ctiClient.isClientConnected()) {
+        await this.ctiClient.disconnect();
+      }
+    } catch {
+      // Ignore cleanup errors
+    }
+  }
+
+  // Cleanup offline sync client
+  if (this.offlineClient) {
+    try {
+      await this.offlineClient.destroy();
+    } catch {
+      // Ignore cleanup errors
+    }
+  }
+
+  // Cleanup test vehicles created during this scenario
+  const testVehicles = this.getTestData<string[]>('testVehicles') || [];
+  if (testVehicles.length > 0 && this.fleetEndpoints && this.odooApi) {
+    try {
+      for (const plate of testVehicles) {
+        const vehicle = await this.fleetEndpoints.getVehicleByPlate(plate);
+        if (vehicle) {
+          // First, delete driver assignment logs to avoid FK constraint
+          const assignmentLogs = await this.odooApi.search('fleet.vehicle.assignation.log', [['vehicle_id', '=', vehicle.id]]);
+          if (assignmentLogs.length > 0) {
+            await this.odooApi.execute('fleet.vehicle.assignation.log', 'unlink', [assignmentLogs]);
+          }
+          
+          // Delete odometer records
+          const odometerRecords = await this.odooApi.search('fleet.vehicle.odometer', [['vehicle_id', '=', vehicle.id]]);
+          if (odometerRecords.length > 0) {
+            await this.odooApi.execute('fleet.vehicle.odometer', 'unlink', [odometerRecords]);
+          }
+          
+          // Now delete the vehicle
+          await this.fleetEndpoints.deleteVehicle(vehicle.id);
+          console.log(`🗑️ Cleanup: deleted test vehicle ${plate}`);
+        }
+      }
+    } catch (error) {
+      console.log(`⚠️ Test vehicle cleanup failed: ${error}`);
+    }
+  }
 });
 
 /**
@@ -164,6 +301,36 @@ AfterAll(async function () {
     await browser.close();
   }
 
+  // Close database pool
+  try {
+    await PgClient.closePool();
+  } catch {
+    // Pool may not have been initialized
+  }
+
   console.log('✅ Browser closed successfully');
   console.log('\n📊 Test run complete. Check reports/cucumber for results.\n');
+});
+
+/**
+ * BeforeStep Hook
+ * Records step start time for diagnostics
+ */
+BeforeStep(async function (step) {
+  if (DEBUG_TIMING) {
+    stepStartTime = Date.now();
+  }
+});
+
+/**
+ * AfterStep Hook
+ * Reports step execution time for diagnostics
+ */
+AfterStep(async function (step) {
+  if (DEBUG_TIMING) {
+    const duration = Date.now() - stepStartTime;
+    const stepText = step.pickleStep?.text || 'Unknown step';
+    const color = duration > 3000 ? '🔴' : duration > 1000 ? '🟡' : '🟢';
+    console.log(`   ${color} ${duration}ms - ${stepText}`);
+  }
 });

@@ -12,6 +12,9 @@ import { OdooJsonRpcClient } from '../api/clients/OdooJsonRpcClient';
 import { RestApiClient } from '../api/clients/RestApiClient';
 import { FleetEndpoints } from '../api/endpoints/FleetEndpoints';
 import { HttpResponse } from '../types/api';
+import { PgClient } from '../db/PgClient';
+import { AsteriskMockClient } from '../api/clients/AsteriskMockClient';
+import { CouchClient } from '../db/CouchClient';
 
 /**
  * World parameters passed from cucumber.config.ts
@@ -50,6 +53,13 @@ export class CustomWorld extends World<WorldParameters> {
 
   // API Response Storage
   lastApiResponse?: HttpResponse;
+
+  // Database Client (PostgreSQL)
+  dbClient?: PgClient;
+
+  // Mock Services
+  ctiClient?: AsteriskMockClient;
+  offlineClient?: CouchClient;
 
   // Test data storage - use Map for type-safe key-value storage
   testData: Map<string, unknown> = new Map();

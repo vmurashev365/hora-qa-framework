@@ -104,6 +104,17 @@ Given('I login with username {string} and password {string}', { timeout: 30000 }
  * Supports both UI-MAP keys and legacy page names
  */
 When('I navigate to {string} page', { timeout: 30000 }, async function (this: CustomWorld, pageName: string) {
+  // Check if user is logged in (Home Menu visible means logged in)
+  const isLoggedIn = await this.page.getByTitle('Home Menu').isVisible({ timeout: 1000 }).catch(() => false);
+  
+  // If not logged in, use direct URL navigation (for testing unauthorized access)
+  if (!isLoggedIn) {
+    const baseUrl = this.getTestData<string>('baseUrl') || this.getBaseUrl();
+    const path = resolvePageUrl(pageName) || `/web#model=fleet.vehicle&view_type=list`;
+    await this.page.goto(`${baseUrl}${path}`, { waitUntil: 'domcontentloaded' });
+    return;
+  }
+  
   // Try to resolve menu navigation from UI-MAP
   const uiMapKey = pageName.toLowerCase().replace(/\s+/g, '');
   const menuNav = MENU_NAVIGATION[uiMapKey] || MENU_NAVIGATION[pageName];
@@ -161,7 +172,6 @@ When('I navigate to URL {string}', async function (this: CustomWorld, urlPath: s
   const fullUrl = urlPath.startsWith('http') ? urlPath : `${baseUrl}${urlPath}`;
   
   await this.page.goto(fullUrl, { waitUntil: 'domcontentloaded' });
-  await this.page.waitForLoadState('networkidle', { timeout: 30000 }).catch(() => {});
 });
 
 /**
@@ -170,7 +180,6 @@ When('I navigate to URL {string}', async function (this: CustomWorld, urlPath: s
  */
 When('I refresh the page', async function (this: CustomWorld) {
   await this.page.reload({ waitUntil: 'domcontentloaded' });
-  await this.page.waitForLoadState('networkidle', { timeout: 30000 }).catch(() => {});
 });
 
 /**
@@ -179,7 +188,6 @@ When('I refresh the page', async function (this: CustomWorld) {
  */
 When('I go back', async function (this: CustomWorld) {
   await this.page.goBack({ waitUntil: 'domcontentloaded' });
-  await this.page.waitForLoadState('networkidle', { timeout: 30000 }).catch(() => {});
 });
 
 /**
@@ -188,7 +196,6 @@ When('I go back', async function (this: CustomWorld) {
  */
 When('I go forward', async function (this: CustomWorld) {
   await this.page.goForward({ waitUntil: 'domcontentloaded' });
-  await this.page.waitForLoadState('networkidle', { timeout: 30000 }).catch(() => {});
 });
 
 /**
@@ -198,7 +205,6 @@ When('I go forward', async function (this: CustomWorld) {
 When('I click {string} link', async function (this: CustomWorld, linkText: string) {
   const link = this.page.getByRole('link', { name: linkText });
   await link.click();
-  await this.page.waitForLoadState('networkidle', { timeout: 30000 }).catch(() => {});
 });
 
 /**
@@ -276,6 +282,16 @@ When('I wait for page to load', async function (this: CustomWorld) {
   await this.page.waitForLoadState('domcontentloaded');
   await this.page.waitForLoadState('load');
   await this.page.waitForLoadState('networkidle', { timeout: 30000 }).catch(() => {});
+});
+
+/**
+ * When I wait for form to load
+ * Waits for Odoo form view to be ready
+ */
+When('I wait for form to load', async function (this: CustomWorld) {
+  await this.page.locator('.o_form_view').waitFor({ state: 'visible', timeout: 10000 });
+  // Extra wait for form fields to be initialized
+  await this.page.waitForTimeout(500);
 });
 
 /**

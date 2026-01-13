@@ -73,21 +73,23 @@ export abstract class OdooBasePage extends BasePage {
     try {
       // Wait for loading overlay to disappear (if present)
       const loadingOverlay = this.page.locator(this.selectors.loadingOverlay);
-      if (await loadingOverlay.isVisible()) {
-        await loadingOverlay.waitFor({ state: 'hidden', timeout: 30000 });
+      const isLoadingVisible = await loadingOverlay.isVisible().catch(() => false);
+      if (isLoadingVisible) {
+        await loadingOverlay.waitFor({ state: 'hidden', timeout: 10000 });
       }
       
       // Wait for blockUI to disappear (if present)
       const blockUI = this.page.locator(this.selectors.blockUI);
-      if (await blockUI.isVisible()) {
-        await blockUI.waitFor({ state: 'hidden', timeout: 30000 });
+      const isBlockUIVisible = await blockUI.isVisible().catch(() => false);
+      if (isBlockUIVisible) {
+        await blockUI.waitFor({ state: 'hidden', timeout: 10000 });
       }
     } catch {
       // Loading indicators might not appear, that's OK
     }
     
     // Small delay to ensure stability
-    await sleep(300);
+    await sleep(100);
   }
 
   /**

@@ -47,14 +47,30 @@ export class VehiclesListPage extends OdooBasePage {
   }
 
   /**
-   * Navigate to Vehicles list page
+   * Navigate to Vehicles page (list or kanban view)
    * @param baseUrl - Base URL of Odoo instance
    */
   async navigateToVehicles(baseUrl: string): Promise<void> {
-    const url = `${baseUrl}/web#model=fleet.vehicle&view_type=list`;
-    await this.page.goto(url);
-    await this.waitForPageLoad();
-    await this.waitForOdooReady();
+    // Navigate to fleet vehicles
+    const url = `${baseUrl}/web#model=fleet.vehicle`;
+    await this.page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    
+    // Wait for page to load
+    await this.page.waitForLoadState('networkidle').catch(() => {});
+    
+    // Wait for either list or kanban view to appear with retry
+    const vehiclesView = this.page.locator('.o_kanban_view, .o_kanban_renderer, table.o_list_table, .o_list_view, .o_view_controller');
+    
+    try {
+      await vehiclesView.first().waitFor({ state: 'visible', timeout: 15000 });
+    } catch {
+      // Retry with fresh navigation
+      console.log('  ⟳ Retrying navigation...');
+      await this.page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
+      await vehiclesView.first().waitFor({ state: 'visible', timeout: 15000 });
+    }
+    
+    console.log('  ✓ Vehicles page loaded');
   }
 
   /**
@@ -81,18 +97,13 @@ export class VehiclesListPage extends OdooBasePage {
    * Click Create button to open new vehicle form
    */
   async clickCreateVehicle(): Promise<void> {
-    await this.waitForLoadingComplete();
+    // Click New button - in Odoo 17 it's labeled "New"
+    const newBtn = this.page.getByRole('button', { name: /^new$/i }).first();
+    await newBtn.waitFor({ state: 'visible', timeout: 5000 });
+    await newBtn.click();
     
-    // Try role-based selector first, using .first() for Odoo 17 which may have duplicate buttons
-    const createBtn = this.page.getByRole('button', { name: /^new$/i }).first();
-    if (await createBtn.isVisible()) {
-      await createBtn.click();
-    } else {
-      // Fallback to Odoo-specific selector with .first()
-      await this.page.locator(this.vehicleSelectors.createVehicleBtn).first().click();
-    }
-    
-    await this.waitForLoadingComplete();
+    // Wait for form to appear
+    await this.page.locator('.o_form_view').waitFor({ state: 'visible', timeout: 10000 });
   }
 
   /**
@@ -238,16 +249,49 @@ export class VehiclesListPage extends OdooBasePage {
 
   /**
    * Click on vehicle row by license plate
+   * Works in both List view (.o_data_row) and Kanban view (.o_kanban_record)
    * @param licensePlate - License plate of vehicle to click
    */
   async clickVehicleByLicensePlate(licensePlate: string): Promise<void> {
     await this.waitForLoadingComplete();
     
-    const row = this.page.locator('.o_data_row').filter({
+    // Try List view first (table rows)
+    const listRow = this.page.locator('.o_data_row').filter({
       has: this.page.locator(`td:has-text("${licensePlate}")`)
     }).first();
     
-    await row.click();
+    if (await listRow.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await listRow.click();
+      await this.waitForLoadingComplete();
+      return;
+    }
+    
+    // Try Kanban view - click on the .oe_kanban_global_click area within card
+    // Card text format is "MD-AUDIT-001: Audi/A1" so we search for plate at start
+    const kanbanClickArea = this.page.locator('.o_kanban_record .oe_kanban_global_click').filter({
+      hasText: new RegExp(`^${licensePlate}`)
+    }).first();
+    
+    if (await kanbanClickArea.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await kanbanClickArea.click();
+      await this.waitForLoadingComplete();
+      return;
+    }
+    
+    // Fallback: try any kanban record containing the plate
+    const kanbanCard = this.page.locator('.o_kanban_record').filter({
+      hasText: licensePlate
+    }).first();
+    
+    if (await kanbanCard.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await kanbanCard.click();
+      await this.waitForLoadingComplete();
+      return;
+    }
+    
+    // Last resort: click on any element containing the plate text
+    const anyElement = this.page.locator(`text="${licensePlate}"`).first();
+    await anyElement.click();
     await this.waitForLoadingComplete();
   }
 

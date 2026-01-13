@@ -12,6 +12,7 @@
     "test:api:smoke": "cucumber-js --tags @api-smoke",
     "test:web": "cucumber-js features/web --tags @web",
     "test:integration": "cucumber-js --tags @integration",
+    "test:security": "cucumber-js --tags @security",
     "test:all": "cucumber-js --tags \"not @performance\"",
     "report:cucumber": "node scripts/generate-report.js",
     "lint": "eslint src/",
@@ -37,13 +38,17 @@
     "@cucumber/cucumber": "^10.0.0",
     "cucumber-html-reporter": "^7.1.1",
     "dotenv": "^16.3.1",
-    "playwright": "^1.48.0"
+    "pg": "^8.11.3",
+    "playwright": "^1.48.0",
+    "pouchdb-node": "^8.0.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",
     "@playwright/test": "^1.48.0",
     "@types/node": "^20.10.0",
+    "@types/pg": "^8.10.9",
     "eslint": "^9.0.0",
+    "pouchdb-adapter-memory": "^9.0.0",
     "prettier": "^3.0.0",
     "rimraf": "^5.0.5",
     "ts-node": "^10.9.2",

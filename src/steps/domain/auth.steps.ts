@@ -62,14 +62,15 @@ Given('I am logged in as {string}', { timeout: 30000 }, async function (this: Cu
   const envKey = `USER_${username.toUpperCase()}_PASSWORD`;
   const password = process.env[envKey] || 'admin';
 
-  // Check if already logged in as this user
-  const currentUser = this.getTestData<string>('username');
-  if (currentUser === username && await this.loginPage.isLoggedIn()) {
-    console.log(`   Already logged in as ${username}, skipping login`);
+  // Check if already logged in as this user  
+  const isLoggedIn = await this.loginPage.isLoggedIn().catch(() => false);
+  if (isLoggedIn) {
     return;
   }
 
+  console.log(`  Logging in as ${username}...`);
   await this.loginPage.login(username, password, baseUrl);
+  console.log(`  Login complete for ${username}`);
   this.setTestData('isLoggedIn', true);
   this.setTestData('username', username);
 });

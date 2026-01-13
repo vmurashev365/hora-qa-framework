@@ -62,8 +62,8 @@ When('I click {string} button', { timeout: 15000 }, async function (this: Custom
     await this.page.getByRole('button', { name: labelsToTry[0] }).click();
   }
   
-  // Wait for form/view to load
-  await this.page.locator('.o_form_view, .o_list_view, .o_kanban_view').first().waitFor({ state: 'visible', timeout: 10000 }).catch(() => {});
+  // Wait for page response - but don't wait for specific elements that may not appear (e.g., failed login)
+  await this.page.waitForLoadState('domcontentloaded');
 });
 
 /**

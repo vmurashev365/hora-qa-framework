@@ -98,6 +98,9 @@ export class LoginPage extends BasePage {
     const currentUrl = this.page.url();
     if (!currentUrl.includes('/web/login')) {
       await this.navigate(baseUrl);
+    } else {
+      // Already on login page, make sure form is ready
+      await this.waitForLoginForm();
     }
 
     // Fill credentials
@@ -107,9 +110,36 @@ export class LoginPage extends BasePage {
     // Click login
     await this.clickLogin();
 
-    // Wait for navigation to complete
-    await this.page.waitForURL(/\/web(?!\/login)/, { timeout: 15000 });
-    await this.page.waitForLoadState('networkidle');
+    // Wait for navigation to complete - use multiple strategies
+    try {
+      await this.page.waitForURL(/\/web(?!\/login)/, { timeout: 15000 });
+    } catch {
+      // Fallback: wait for navbar to appear (indicates successful login)
+      await this.page.waitForSelector('.o_main_navbar', { state: 'visible', timeout: 10000 });
+    }
+    
+    // Wait for DOM to be ready (fast, no need for networkidle)
+    await this.page.waitForLoadState('domcontentloaded');
+  }
+
+  /**
+   * Attempt login without expecting success (for testing failed logins)
+   * @param username - Username or email
+   * @param password - Password
+   */
+  async attemptLogin(username: string, password: string): Promise<void> {
+    // Wait for login form
+    await this.waitForLoginForm();
+
+    // Fill credentials
+    await this.fillEmail(username);
+    await this.fillPassword(password);
+
+    // Click login
+    await this.clickLogin();
+
+    // Just wait for page to respond (don't expect success)
+    await this.page.waitForLoadState('domcontentloaded');
   }
 
   /**
@@ -144,8 +174,8 @@ export class LoginPage extends BasePage {
    * Logout from Odoo
    */
   async logout(): Promise<void> {
-    // Click user menu
-    await this.page.locator('.o_user_menu, .oe_topbar_name').click();
+    // Click user menu - use first matching element
+    await this.page.locator('.o_user_menu').first().click();
     
     // Click logout option
     await this.page.getByRole('menuitem', { name: /log out/i }).click();
