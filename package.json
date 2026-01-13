@@ -1,0 +1,48 @@
+{
+  "name": "hora-services-qa-framework",
+  "version": "1.0.0",
+  "description": "QA Automation Framework for Hora Services using Playwright and Cucumber",
+  "main": "dist/index.js",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "test:smoke": "cucumber-js --tags \"@smoke and not @api\"",
+    "test:api": "cucumber-js --tags @api",
+    "test:api:smoke": "cucumber-js --tags @api-smoke",
+    "test:integration": "cucumber-js --tags @integration",
+    "test:all": "cucumber-js --tags \"not @performance\"",
+    "report:cucumber": "node scripts/generate-report.js",
+    "lint": "eslint src/**/*.ts features/**/*.feature --ext .ts",
+    "type-check": "tsc --noEmit",
+    "build": "tsc",
+    "clean": "rimraf dist reports/cucumber/*.json reports/cucumber/*.html"
+  },
+  "keywords": [
+    "qa",
+    "automation",
+    "playwright",
+    "cucumber",
+    "bdd",
+    "odoo"
+  ],
+  "author": "Hora Services QA Team",
+  "license": "UNLICENSED",
+  "private": true,
+  "dependencies": {
+    "@cucumber/cucumber": "^10.0.0",
+    "playwright": "^1.48.0",
+    "dotenv": "^16.3.1",
+    "cucumber-html-reporter": "^7.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@playwright/test": "^1.48.0",
+    "typescript": "^5.3.3",
+    "ts-node": "^10.9.2",
+    "rimraf": "^5.0.5",
+    "@typescript-eslint/eslint-plugin": "^6.13.0",
+    "@typescript-eslint/parser": "^6.13.0",
+    "eslint": "^8.55.0"
+  }
+}
