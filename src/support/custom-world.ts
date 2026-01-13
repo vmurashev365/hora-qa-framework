@@ -3,9 +3,11 @@
  * Extends the default World with Playwright browser, context, page, and page objects
  */
 
-import { World, IWorldOptions } from '@cucumber/cucumber';
+import { World, IWorldOptions, setWorldConstructor } from '@cucumber/cucumber';
 import { Browser, BrowserContext, Page } from 'playwright';
 import { VehiclesListPage } from '../pages/web/fleet/VehiclesListPage';
+import { VehicleFormPage } from '../pages/web/fleet/VehicleFormPage';
+import { LoginPage } from '../pages/web/LoginPage';
 import { OdooJsonRpcClient } from '../api/clients/OdooJsonRpcClient';
 import { RestApiClient } from '../api/clients/RestApiClient';
 import { FleetEndpoints } from '../api/endpoints/FleetEndpoints';
@@ -36,6 +38,10 @@ export class CustomWorld extends World<WorldParameters> {
 
   // Page Objects - Fleet Module
   vehiclesListPage!: VehiclesListPage;
+  vehicleFormPage!: VehicleFormPage;
+  
+  // Page Objects - Authentication
+  loginPage!: LoginPage;
 
   // API Clients
   odooApi!: OdooJsonRpcClient;
@@ -96,11 +102,12 @@ export class CustomWorld extends World<WorldParameters> {
    */
   initializePageObjects(): void {
     this.vehiclesListPage = new VehiclesListPage(this.page);
+    this.vehicleFormPage = new VehicleFormPage(this.page);
+    this.loginPage = new LoginPage(this.page);
   }
 }
 
 // Set the world constructor for Cucumber
-import { setWorldConstructor } from '@cucumber/cucumber';
 setWorldConstructor(CustomWorld);
 
 export default CustomWorld;

@@ -1,11 +1,13 @@
 /**
  * Assertion Step Definitions
  * Atomic steps for verifying UI state and content
+ * Uses UI-MAP pattern for field resolution
  */
 
 import { Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
 import { CustomWorld } from '../../support/custom-world';
+import { UI_MAP, isValidFieldKey, getFieldAliases } from '../../ui-map';
 
 /**
  * Then I should see {string} text
@@ -91,24 +93,72 @@ Then('{string} field should be visible', async function (this: CustomWorld, labe
 /**
  * Then {string} field should contain {string}
  * Verifies an input field contains specific value
+ * Supports UI-MAP field keys
  */
-Then('{string} field should contain {string}', { timeout: 15000 }, async function (this: CustomWorld, label: string, expectedValue: string) {
+Then('{string} field should contain {string}', { timeout: 15000 }, async function (this: CustomWorld, fieldKey: string, expectedValue: string) {
+  // Try to resolve from UI-MAP first
+  let fieldLabel: string;
+  
+  if (isValidFieldKey(fieldKey)) {
+    fieldLabel = UI_MAP.fields[fieldKey];
+  } else {
+    // Fallback to direct label (backward compatibility)
+    fieldLabel = fieldKey;
+  }
+  
+  // Get all possible aliases for this field
+  const aliases = getFieldAliases(fieldKey);
+  const labelsToTry = aliases.length > 0 ? aliases : [fieldLabel];
+  
   // Odoo field label aliases
-  const labelAliases: Record<string, string> = {
+  const odooAliases: Record<string, string> = {
     'License Plate': 'License Plate?',
   };
   
-  const actualLabel = labelAliases[label] || label;
-  
-  // Try textbox role first
-  let field = this.page.getByRole('textbox', { name: actualLabel });
-  
-  // Fallback to getByLabel
-  if (!(await field.isVisible().catch(() => false))) {
-    field = this.page.getByLabel(actualLabel);
+  // Add Odoo aliases to the list
+  for (const label of [...labelsToTry]) {
+    if (odooAliases[label]) {
+      labelsToTry.push(odooAliases[label]);
+    }
   }
   
-  await expect(field).toHaveValue(expectedValue, { timeout: 10000 });
+  // Try each label until one works
+  let verified = false;
+  for (const label of labelsToTry) {
+    try {
+      // Try textbox role first
+      let field = this.page.getByRole('textbox', { name: label });
+      if (await field.isVisible({ timeout: 1500 })) {
+        await expect(field).toHaveValue(expectedValue, { timeout: 5000 });
+        verified = true;
+        break;
+      }
+      
+      // Fallback to getByLabel
+      field = this.page.getByLabel(label);
+      if (await field.isVisible({ timeout: 1500 })) {
+        await expect(field).toHaveValue(expectedValue, { timeout: 5000 });
+        verified = true;
+        break;
+      }
+    } catch {
+      // Try next alias
+    }
+  }
+  
+  if (!verified) {
+    // Final fallback: try by name attribute (snake_case)
+    const snakeCaseKey = fieldKey.replace(/([A-Z])/g, '_$1').toLowerCase().replace(/^_/, '');
+    const fieldByName = this.page.locator(`[name="${snakeCaseKey}"] input, input[name="${snakeCaseKey}"]`);
+    if (await fieldByName.isVisible({ timeout: 2000 })) {
+      await expect(fieldByName).toHaveValue(expectedValue, { timeout: 5000 });
+      verified = true;
+    }
+  }
+  
+  if (!verified) {
+    throw new Error(`Could not verify field "${fieldKey}" (tried labels: ${labelsToTry.join(', ')})`);
+  }
 });
 
 /**

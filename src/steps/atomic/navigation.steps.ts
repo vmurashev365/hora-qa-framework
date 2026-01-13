@@ -1,23 +1,45 @@
 /**
  * Navigation Step Definitions
  * Atomic steps for page navigation and URL handling
+ * Uses UI-MAP pattern for page resolution
  */
 
 import { Given, When, Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
 import { CustomWorld } from '../../support/custom-world';
+import { UI_MAP, isValidPageKey, MENU_NAVIGATION } from '../../ui-map';
 
 /**
  * URL mapping for page navigation
  * Maps friendly page names to Odoo URLs
+ * Now uses UI-MAP with backward compatibility
  */
-const pageUrls: Record<string, string> = {
+const legacyPageUrls: Record<string, string> = {
   'Vehicles': '/web#model=fleet.vehicle&view_type=list',
   'Vehicle Form': '/web#model=fleet.vehicle&view_type=form',
   'Fleet Dashboard': '/web#action=fleet.fleet_vehicle_action',
   'Login': '/web/login',
   'Home': '/web',
 };
+
+/**
+ * Resolve page URL from UI-MAP key or legacy name
+ */
+function resolvePageUrl(pageName: string): string | undefined {
+  // Try UI-MAP first (lowercase keys)
+  const uiMapKey = pageName.toLowerCase().replace(/\s+/g, '');
+  if (isValidPageKey(uiMapKey)) {
+    return UI_MAP.pages[uiMapKey];
+  }
+  
+  // Try direct UI-MAP key
+  if (isValidPageKey(pageName)) {
+    return UI_MAP.pages[pageName];
+  }
+  
+  // Fallback to legacy page URLs
+  return legacyPageUrls[pageName];
+}
 
 /**
  * Given Odoo is accessible at {string}
@@ -79,16 +101,21 @@ Given('I login with username {string} and password {string}', { timeout: 30000 }
 /**
  * When I navigate to {string} page
  * Navigates to a named page using menu navigation (from codegen)
+ * Supports both UI-MAP keys and legacy page names
  */
 When('I navigate to {string} page', { timeout: 30000 }, async function (this: CustomWorld, pageName: string) {
-  // Menu navigation mapping
-  const menuNavigation: Record<string, { app: string; menuItem?: string }> = {
+  // Try to resolve menu navigation from UI-MAP
+  const uiMapKey = pageName.toLowerCase().replace(/\s+/g, '');
+  const menuNav = MENU_NAVIGATION[uiMapKey] || MENU_NAVIGATION[pageName];
+  
+  // Legacy menu navigation mapping (backward compatibility)
+  const legacyMenuNavigation: Record<string, { app: string; menuItem?: string }> = {
     'Vehicles': { app: 'Fleet' },
     'Fleet': { app: 'Fleet' },
     'Fleet Dashboard': { app: 'Fleet' },
   };
   
-  const nav = menuNavigation[pageName];
+  const nav = menuNav || legacyMenuNavigation[pageName];
   
   if (nav) {
     // Navigate via Odoo menu
@@ -107,10 +134,15 @@ When('I navigate to {string} page', { timeout: 30000 }, async function (this: Cu
   } else {
     // Fallback to URL navigation
     const baseUrl = this.getTestData<string>('baseUrl') || this.getBaseUrl();
-    const path = pageUrls[pageName];
+    const path = resolvePageUrl(pageName);
     
     if (!path) {
-      throw new Error(`Unknown page: "${pageName}". Available: ${Object.keys(pageUrls).join(', ')}, ${Object.keys(menuNavigation).join(', ')}`);
+      const availablePages = [
+        ...Object.keys(UI_MAP.pages),
+        ...Object.keys(legacyPageUrls),
+        ...Object.keys(MENU_NAVIGATION),
+      ];
+      throw new Error(`Unknown page: "${pageName}". Available: ${[...new Set(availablePages)].join(', ')}`);
     }
     
     await this.page.goto(`${baseUrl}${path}`, { waitUntil: 'domcontentloaded' });
@@ -191,7 +223,7 @@ When('I click {string} menu item', async function (this: CustomWorld, menuText: 
  * Verifies current page by checking URL
  */
 Then('I should be on {string} page', async function (this: CustomWorld, pageName: string) {
-  const expectedPath = pageUrls[pageName];
+  const expectedPath = resolvePageUrl(pageName);
   
   if (!expectedPath) {
     throw new Error(`Unknown page: "${pageName}"`);

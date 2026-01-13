@@ -1,29 +1,66 @@
 /**
  * Interaction Step Definitions
  * Atomic steps for UI interactions (clicks, fills, selects, etc.)
- * DIRECT selectors - no ui-map yet (Phase 3)
+ * Uses UI-MAP pattern for selector resolution
  */
 
 import { When } from '@cucumber/cucumber';
 import { CustomWorld } from '../../support/custom-world';
+import { UI_MAP, isValidFieldKey, isValidButtonKey, getFieldAliases, getButtonAliases } from '../../ui-map';
 
 /**
  * When I click {string} button
- * Clicks a button by its accessible name
+ * Clicks a button by its UI-MAP key or accessible name
  */
-When('I click {string} button', { timeout: 15000 }, async function (this: CustomWorld, buttonName: string) {
+When('I click {string} button', { timeout: 15000 }, async function (this: CustomWorld, buttonKey: string) {
+  // Try to resolve from UI-MAP first
+  let buttonLabel: string;
+  
+  if (isValidButtonKey(buttonKey)) {
+    buttonLabel = UI_MAP.buttons[buttonKey];
+  } else {
+    // Fallback to direct label (backward compatibility)
+    buttonLabel = buttonKey;
+  }
+  
+  // Get all possible aliases for this button
+  const aliases = getButtonAliases(buttonKey);
+  const labelsToTry = aliases.length > 0 ? aliases : [buttonLabel];
+  
   // Odoo button name aliases (Odoo 17 naming conventions)
-  const buttonAliases: Record<string, string> = {
+  const odooAliases: Record<string, string> = {
     'Create': 'New',
     'create': 'New',
     'Discard': 'Discard changes',
     'discard': 'Discard changes',
   };
   
-  const actualButtonName = buttonAliases[buttonName] || buttonName;
+  // Add Odoo aliases to the list
+  for (const label of [...labelsToTry]) {
+    if (odooAliases[label]) {
+      labelsToTry.push(odooAliases[label]);
+    }
+  }
   
-  // Click button by role
-  await this.page.getByRole('button', { name: actualButtonName }).click();
+  // Try each label until one works
+  let clicked = false;
+  for (const label of labelsToTry) {
+    try {
+      const button = this.page.getByRole('button', { name: label });
+      if (await button.isVisible({ timeout: 2000 })) {
+        await button.click();
+        clicked = true;
+        break;
+      }
+    } catch {
+      // Try next alias
+    }
+  }
+  
+  if (!clicked) {
+    // Final fallback: try first label with longer wait
+    await this.page.getByRole('button', { name: labelsToTry[0] }).click();
+  }
   
   // Wait for form/view to load
   await this.page.locator('.o_form_view, .o_list_view, .o_kanban_view').first().waitFor({ state: 'visible', timeout: 10000 }).catch(() => {});
@@ -31,28 +68,97 @@ When('I click {string} button', { timeout: 15000 }, async function (this: Custom
 
 /**
  * When I fill {string} with {string}
- * Fills an input field identified by label
+ * Fills an input field identified by UI-MAP key or label
  */
-When('I fill {string} with {string}', { timeout: 15000 }, async function (this: CustomWorld, label: string, value: string) {
+When('I fill {string} with {string}', { timeout: 20000 }, async function (this: CustomWorld, fieldKey: string, value: string) {
+  // Convert to snake_case for Odoo field name lookup
+  const snakeCaseKey = fieldKey.replace(/([A-Z])/g, '_$1').toLowerCase().replace(/^_/, '');
+  
+  // Wait for form to be ready
+  await this.page.locator('.o_form_view').waitFor({ state: 'visible', timeout: 10000 }).catch(() => {});
+  
+  // Try to resolve from UI-MAP first
+  let fieldLabel: string;
+  
+  if (isValidFieldKey(fieldKey)) {
+    fieldLabel = UI_MAP.fields[fieldKey];
+  } else {
+    // Fallback to direct label (backward compatibility)
+    fieldLabel = fieldKey;
+  }
+  
+  // Get all possible aliases for this field
+  const aliases = getFieldAliases(fieldKey);
+  const labelsToTry = aliases.length > 0 ? aliases : [fieldLabel];
+  
   // Odoo field label aliases (Odoo adds ? to some labels)
-  const labelAliases: Record<string, string> = {
+  const odooAliases: Record<string, string> = {
     'License Plate': 'License Plate?',
   };
   
-  const actualLabel = labelAliases[label] || label;
-  
-  // Try textbox role first (most reliable for Odoo)
-  let field = this.page.getByRole('textbox', { name: actualLabel });
-  
-  // Fallback to getByLabel
-  if (!(await field.isVisible().catch(() => false))) {
-    field = this.page.getByLabel(actualLabel);
+  // Add Odoo aliases to the list
+  for (const label of [...labelsToTry]) {
+    if (odooAliases[label]) {
+      labelsToTry.push(odooAliases[label]);
+    }
   }
   
-  await field.fill(value);
+  // Try each label until one works
+  let filled = false;
+  for (const label of labelsToTry) {
+    try {
+      // Try textbox role first (most reliable for Odoo)
+      let field = this.page.getByRole('textbox', { name: label });
+      if (await field.isVisible({ timeout: 1500 })) {
+        await field.fill(value);
+        filled = true;
+        break;
+      }
+      
+      // Fallback to getByLabel
+      field = this.page.getByLabel(label);
+      if (await field.isVisible({ timeout: 1500 })) {
+        await field.fill(value);
+        filled = true;
+        break;
+      }
+    } catch {
+      // Try next alias
+    }
+  }
+  
+  if (!filled) {
+    // Try by name attribute (snake_case) - Odoo uses this format
+    try {
+      const fieldByName = this.page.locator(`[name="${snakeCaseKey}"] input, input[name="${snakeCaseKey}"]`);
+      if (await fieldByName.isVisible({ timeout: 2000 })) {
+        await fieldByName.fill(value);
+        filled = true;
+      }
+    } catch {
+      // Continue
+    }
+  }
+  
+  if (!filled) {
+    // Try div with name and inner input (common in Odoo 17)
+    try {
+      const divField = this.page.locator(`div[name="${snakeCaseKey}"] input`);
+      if (await divField.isVisible({ timeout: 2000 })) {
+        await divField.fill(value);
+        filled = true;
+      }
+    } catch {
+      // Continue
+    }
+  }
+  
+  if (!filled) {
+    throw new Error(`MISSING_UI_MAP: Could not find field "${fieldKey}" (tried labels: ${labelsToTry.join(', ')}, name: ${snakeCaseKey})`);
+  }
   
   // Store the filled value for later assertions
-  this.setTestData(`field_${label}`, value);
+  this.setTestData(`field_${fieldKey}`, value);
 });
 
 /**

@@ -116,7 +116,8 @@ export interface VehicleCreateData {
   active?: boolean;
 }
 
-export interface VehicleUpdateData extends Partial<VehicleCreateData> {}
+// Vehicle update data extends partial VehicleCreateData
+export type VehicleUpdateData = Partial<VehicleCreateData>;
 
 export interface VehicleModel {
   id: number;

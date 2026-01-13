@@ -72,7 +72,7 @@ export class FleetEndpoints {
 
     // Create a test model if none exists
     // First need a brand
-    let brandId = await this.getOrCreateDefaultBrand();
+    const brandId = await this.getOrCreateDefaultBrand();
     
     this.defaultModelId = await this.client.create(VEHICLE_MODEL_MODEL, {
       name: 'Test Model',

@@ -83,13 +83,13 @@ export class VehiclesListPage extends OdooBasePage {
   async clickCreateVehicle(): Promise<void> {
     await this.waitForLoadingComplete();
     
-    // Try role-based selector first
-    const createBtn = this.page.getByRole('button', { name: /create/i });
+    // Try role-based selector first, using .first() for Odoo 17 which may have duplicate buttons
+    const createBtn = this.page.getByRole('button', { name: /^new$/i }).first();
     if (await createBtn.isVisible()) {
       await createBtn.click();
     } else {
-      // Fallback to Odoo-specific selector
-      await this.page.locator(this.vehicleSelectors.createVehicleBtn).click();
+      // Fallback to Odoo-specific selector with .first()
+      await this.page.locator(this.vehicleSelectors.createVehicleBtn).first().click();
     }
     
     await this.waitForLoadingComplete();
@@ -249,6 +249,32 @@ export class VehiclesListPage extends OdooBasePage {
     
     await row.click();
     await this.waitForLoadingComplete();
+  }
+
+  /**
+   * Alias for clickVehicleByLicensePlate
+   * @param licensePlate - License plate of vehicle to click
+   */
+  async clickVehicleByPlate(licensePlate: string): Promise<void> {
+    await this.clickVehicleByLicensePlate(licensePlate);
+  }
+
+  /**
+   * Search for vehicle by license plate
+   * @param licensePlate - License plate to search
+   */
+  async searchVehicle(licensePlate: string): Promise<void> {
+    await this.search(licensePlate);
+  }
+
+  /**
+   * Get vehicle row locator by license plate
+   * @param licensePlate - License plate to find
+   */
+  getVehicleByPlate(licensePlate: string) {
+    return this.page.locator('.o_data_row').filter({
+      has: this.page.locator(`td:has-text("${licensePlate}")`)
+    }).first();
   }
 
   /**

@@ -222,7 +222,7 @@ When('I delete vehicle with plate {string} via API', { timeout: 30000 }, async f
 ) {
   const vehicle = await this.fleetEndpoints.getVehicleByPlate(plate);
   
-  if (vehicle && vehicle.id) {
+  if (vehicle?.id) {
     const success = await this.fleetEndpoints.deleteVehicle(vehicle.id);
     this.lastApiResponse = {
       status: success ? 200 : 400,
@@ -370,7 +370,7 @@ function dataTableToObject(dataTable: DataTable): Record<string, unknown> {
  */
 function getJsonPathValue(obj: unknown, path: string): unknown {
   // Remove leading $. or $
-  let cleanPath = path.replace(/^\$\.?/, '');
+  const cleanPath = path.replace(/^\$\.?/, '');
   
   // Handle empty path
   if (!cleanPath) return obj;
