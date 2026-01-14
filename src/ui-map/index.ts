@@ -46,13 +46,24 @@ import {
   matchesMessage, 
   MESSAGE_PATTERNS 
 } from './messages';
+import {
+  TabletSelectors,
+  TabletConstants,
+  DeviceProfiles,
+  NetworkProfiles,
+  TabletSelectorKey,
+  DeviceProfileKey,
+  NetworkProfileKey,
+} from './tablet';
 
 // Re-export all
 export { 
   PAGES, PageKey, getPageUrl, isValidPageKey, MENU_NAVIGATION,
   FIELDS, FieldKey, getFieldLabel, isValidFieldKey, getFieldAliases, FIELD_ALIASES,
   BUTTONS, ButtonKey, getButtonLabel, isValidButtonKey, getButtonAliases, BUTTON_ALIASES,
-  MESSAGES, MessageKey, getMessageText, isValidMessageKey, getMessagePattern, matchesMessage, MESSAGE_PATTERNS
+  MESSAGES, MessageKey, getMessageText, isValidMessageKey, getMessagePattern, matchesMessage, MESSAGE_PATTERNS,
+  TabletSelectors, TabletConstants, DeviceProfiles, NetworkProfiles,
+  TabletSelectorKey, DeviceProfileKey, NetworkProfileKey,
 };
 
 /**
@@ -64,6 +75,14 @@ export const UI_MAP = {
   fields: FIELDS,
   buttons: BUTTONS,
   messages: MESSAGES,
+  
+  // Tablet-specific selectors and constants
+  tablet: {
+    selectors: TabletSelectors,
+    constants: TabletConstants,
+    devices: DeviceProfiles,
+    networks: NetworkProfiles,
+  },
   
   // Aliases for fallback matching
   aliases: {
