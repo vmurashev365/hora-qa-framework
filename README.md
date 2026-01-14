@@ -1,6 +1,7 @@
 # Hora Services QA Automation Framework
 
 <!-- Badges -->
+
 [![Test Suite](https://github.com/hora-services/hora-qa-framework/actions/workflows/test-suite.yml/badge.svg)](https://github.com/hora-services/hora-qa-framework/actions/workflows/test-suite.yml)
 [![Coverage](https://img.shields.io/badge/coverage-75%25-brightgreen.svg)](./reports/coverage)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue.svg)](https://www.typescriptlang.org/)
@@ -71,6 +72,9 @@ npm run report:cucumber
 # Open report in browser
 start reports/cucumber/index.html  # Windows
 open reports/cucumber/index.html   # macOS
+
+# (Optional) Generate + open Allure report with Trend/history
+npm run report:allure:trend:open
 ```
 
 ### 4. Explore Test Suites
@@ -91,7 +95,7 @@ npm run perf:k6:smoke
 
 ## 📁 Project Structure
 
-```
+```text
 hora-qa-framework/
 ├── features/                       # Gherkin feature files (BDD scenarios)
 │   ├── smoke.feature              # Smoke tests
@@ -140,18 +144,17 @@ hora-qa-framework/
 │   └── screenshots/              # Failure screenshots
 ├── scripts/                       # Utility scripts
 │   ├── generate-report.js        # Report generator
+│   ├── allure-history.js         # Persist Allure Trend history between runs
 │   ├── clean-test-data.ts        # Data cleanup
 │   └── seed-test-data.ts         # Data seeding
+├── allure-results/                # Allure raw results (generated)
+├── allure-report/                 # Allure HTML report (generated)
+├── allure-history/                # Allure Trend history cache (generated)
 ├── .github/workflows/             # CI/CD pipelines
 │   └── test-suite.yml            # GitHub Actions workflow
 ├── docker-compose.yml             # Odoo + PostgreSQL setup
-├── cucumber.config.ts             # Cucumber configuration
+├── cucumber.js                    # Cucumber configuration (used by default)
 └── package.json                   # Dependencies & scripts
-├── cucumber.config.ts       # Cucumber configuration
-├── docker-compose.yml       # Docker services
-├── package.json
-├── tsconfig.json
-└── README.md
 ```
 
 ## 📚 Documentation
@@ -169,58 +172,67 @@ Comprehensive documentation for different audiences:
 
 ### Test Execution
 
-| Command | Description |
-|---------|-------------|
-| `npm run test:smoke` | Run smoke tests (quick validation) |
-| `npm run test:api` | Run API tests only |
-| `npm run test:api:smoke` | Run API smoke tests |
-| `npm run test:web` | Run web UI tests |
-| `npm run test:integration` | Run integration tests |
-| `npm run test:security` | Run security tests |
-| `npm run test:all` | Run full regression suite (parallel) |
-| `npm run test:nightly` | Run smoke + API + integration |
+| Command                    | Description                          |
+| -------------------------- | ------------------------------------ |
+| `npm run test:smoke`       | Run smoke tests (quick validation)   |
+| `npm run test:api`         | Run API tests only                   |
+| `npm run test:api:smoke`   | Run API smoke tests                  |
+| `npm run test:web`         | Run web UI tests                     |
+| `npm run test:integration` | Run integration tests                |
+| `npm run test:security`    | Run security tests                   |
+| `npm run test:all`         | Run full regression suite (parallel) |
+| `npm run test:nightly`     | Run smoke + API + integration        |
 
 ### Performance Testing
 
-| Command | Description |
-|---------|-------------|
-| `npm run perf:k6:smoke` | Run k6 smoke test (1 min, 10 VUs) |
-| `npm run perf:k6:load` | Run k6 load test (9 min, staged load) |
+| Command                 | Description                           |
+| ----------------------- | ------------------------------------- |
+| `npm run perf:k6:smoke` | Run k6 smoke test (1 min, 10 VUs)     |
+| `npm run perf:k6:load`  | Run k6 load test (9 min, staged load) |
 
 ### Reporting
 
-| Command | Description |
-|---------|-------------|
-| `npm run report:cucumber` | Generate Cucumber HTML report |
-| `npm run report:allure` | Generate Allure report |
-| `npm run report:allure:open` | Generate and open Allure report |
+| Command                            | Description                                           |
+| ---------------------------------- | ----------------------------------------------------- |
+| `npm run report:cucumber`          | Generate Cucumber HTML report                         |
+| `npm run report:allure`            | Generate Allure report                                |
+| `npm run report:allure:open`       | Generate and open Allure report                       |
+| `npm run report:allure:trend`      | Generate Allure report with Trend/history preserved   |
+| `npm run report:allure:trend:open` | Generate Allure report with Trend/history and open it |
+
+### Allure Trend (Advanced)
+
+| Command                          | Description                                         |
+| -------------------------------- | --------------------------------------------------- |
+| `npm run allure:history:restore` | Restore Trend history into `allure-results/history` |
+| `npm run allure:history:save`    | Save `allure-report/history` into `allure-history`  |
 
 ### Data Management
 
-| Command | Description |
-|---------|-------------|
-| `npm run db:seed` | Seed test data (100 vehicles, 50 drivers) |
-| `npm run db:clean` | Clean up test data |
+| Command            | Description                               |
+| ------------------ | ----------------------------------------- |
+| `npm run db:seed`  | Seed test data (100 vehicles, 50 drivers) |
+| `npm run db:clean` | Clean up test data                        |
 
 ### Docker Management
 
-| Command | Description |
-|---------|-------------|
+| Command                | Description                        |
+| ---------------------- | ---------------------------------- |
 | `npm run docker:start` | Start Odoo + PostgreSQL containers |
-| `npm run docker:stop` | Stop containers |
-| `npm run docker:reset` | Reset containers and volumes |
+| `npm run docker:stop`  | Stop containers                    |
+| `npm run docker:reset` | Reset containers and volumes       |
 
 ### Code Quality
 
-| Command | Description |
-|---------|-------------|
-| `npm run lint` | Run ESLint |
-| `npm run lint:fix` | Fix ESLint issues automatically |
-| `npm run format` | Format code with Prettier |
-| `npm run format:check` | Check code formatting |
-| `npm run type-check` | TypeScript type checking |
-| `npm run build` | Compile TypeScript |
-| `npm run clean` | Clean generated files |
+| Command                | Description                     |
+| ---------------------- | ------------------------------- |
+| `npm run lint`         | Run ESLint                      |
+| `npm run lint:fix`     | Fix ESLint issues automatically |
+| `npm run format`       | Format code with Prettier       |
+| `npm run format:check` | Check code formatting           |
+| `npm run type-check`   | TypeScript type checking        |
+| `npm run build`        | Compile TypeScript              |
+| `npm run clean`        | Clean generated files           |
 
 ## 🐳 Docker Commands
 
@@ -245,14 +257,25 @@ docker-compose down -v
 
 ### Environment Variables (.env)
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `BASE_URL` | `http://localhost:8069` | Odoo base URL |
-| `HEADLESS` | `true` | Run browser headless |
-| `BROWSER` | `chromium` | Browser type |
-| `TIMEOUT` | `30000` | Default timeout (ms) |
-| `SLOW_MO` | `0` | Slow down actions (ms) |
-| `SCREENSHOT_ON_FAILURE` | `true` | Capture on failure |
+| Variable                | Default                 | Description                                  |
+| ----------------------- | ----------------------- | -------------------------------------------- |
+| `BASE_URL`              | `http://localhost:8069` | Odoo base URL                                |
+| `ODOO_USERNAME`         | `admin`                 | Odoo username for UI/API                     |
+| `ODOO_PASSWORD`         | `admin`                 | Odoo password for UI/API                     |
+| `ODOO_DATABASE`         | `hora_qa_db`            | Odoo database name                           |
+| `HEADLESS`              | `true`                  | Run browser headless                         |
+| `BROWSER`               | `chromium`              | Browser type                                 |
+| `TIMEOUT`               | `30000`                 | Default timeout (ms)                         |
+| `SLOW_MO`               | `0`                     | Slow down actions (ms)                       |
+| `SCREENSHOT_ON_FAILURE` | `true`                  | Capture on failure                           |
+| `DB_ENABLED`            | `true`                  | Enable direct DB checks in integration tests |
+| `POSTGRES_HOST`         | `localhost`             | PostgreSQL host                              |
+| `POSTGRES_PORT`         | `5432`                  | PostgreSQL port                              |
+| `POSTGRES_USER`         | `odoo`                  | PostgreSQL user                              |
+| `POSTGRES_PASSWORD`     | `odoo`                  | PostgreSQL password                          |
+| `POSTGRES_DATABASE`     | `hora_qa_db`            | PostgreSQL database                          |
+| `CTI_MODE`              | `mock`                  | CTI mode (`mock`/`disabled`)                 |
+| `OFFLINE_MODE`          | `mock`                  | Offline sync mode (`mock`/`disabled`)        |
 
 ### Running in Headed Mode (Debug)
 
@@ -286,18 +309,21 @@ Feature: My Feature
 ### Available Steps
 
 **Navigation:**
+
 - `Given Odoo is accessible at {string}`
 - `When I navigate to {string} page`
 - `When I click {string} link`
 - `When I refresh the page`
 
 **Interaction:**
+
 - `When I click {string} button`
 - `When I fill {string} with {string}`
 - `When I select {string} from {string} dropdown`
 - `When I check {string} checkbox`
 
 **Assertions:**
+
 - `Then I should see {string} text`
 - `Then I should see {string} button`
 - `Then {string} field should contain {string}`
@@ -314,14 +340,14 @@ npx playwright codegen http://localhost:8069
 ### Run Single Scenario
 
 ```bash
-npx cucumber-js --config cucumber.config.ts --name "Access Vehicles page"
+npx cucumber-js --name "Access Vehicles page"
 ```
 
 ### Run with Tags
 
 ```bash
-npx cucumber-js --config cucumber.config.ts --tags "@critical"
-npx cucumber-js --config cucumber.config.ts --tags "@smoke and not @skip"
+npx cucumber-js --tags "@critical"
+npx cucumber-js --tags "@smoke and not @skip"
 ```
 
 ## 🛠 Troubleshooting
@@ -347,17 +373,31 @@ npm run type-check
 ## 📊 Test Reports
 
 Reports are generated in `reports/cucumber/`:
+
 - `cucumber.json` - Raw JSON results
 - `index.html` - HTML report (after running `npm run report:cucumber`)
 - Screenshots saved in `reports/screenshots/` on failure
 
+### Allure Reports
+
+- Raw results are written to `allure-results/` during test execution.
+- HTML report is generated into `allure-report/`.
+- Trend/History is persisted in `allure-history/` (used to compare stats across runs).
+
+Recommended flow (with Trend):
+
+```bash
+npm run test:api
+npm run report:allure:trend:open
+```
+
 ## 🏷 Test Tags
 
-| Tag | Description |
-|-----|-------------|
-| `@smoke` | Smoke tests (quick sanity check) |
-| `@critical` | Critical path tests |
-| `@skip` | Skip this test |
+| Tag         | Description                      |
+| ----------- | -------------------------------- |
+| `@smoke`    | Smoke tests (quick sanity check) |
+| `@critical` | Critical path tests              |
+| `@skip`     | Skip this test                   |
 
 ## 📞 Support
 
@@ -365,4 +405,4 @@ For issues or questions, please open an issue in the repository.
 
 ---
 
-**Happy Testing! 🎉**
+## Happy Testing! 🎉

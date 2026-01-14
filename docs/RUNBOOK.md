@@ -109,11 +109,13 @@ npm run type-check
 ### Issue 1: Docker Containers Won't Start
 
 **Symptoms**:
+
 - `docker-compose up -d` hangs or fails
 - Port already in use errors
 - Container exits immediately
 
 **Diagnosis**:
+
 ```powershell
 # Check if ports 8069 or 5432 are in use
 netstat -ano | findstr :8069
@@ -127,6 +129,7 @@ docker-compose logs db
 **Solutions**:
 
 **A. Port Conflict**:
+
 ```powershell
 # Find process using port 8069
 netstat -ano | findstr :8069
@@ -139,6 +142,7 @@ taskkill /PID <PID> /F
 ```
 
 **B. Previous Containers Running**:
+
 ```powershell
 # Stop all containers
 docker-compose down
@@ -152,6 +156,7 @@ docker-compose up -d
 ```
 
 **C. Database Connection Issues**:
+
 ```powershell
 # Check PostgreSQL is ready
 docker exec hora-qa-framework-db-1 pg_isready -U odoo
@@ -166,10 +171,12 @@ docker-compose up -d
 ### Issue 2: "Element Not Found" Errors
 
 **Symptoms**:
+
 - Test fails with "locator.click: Timeout 30000ms exceeded"
 - Cannot find button/field/text
 
 **Diagnosis**:
+
 ```gherkin
 # Add debug step before failure
 When I wait 5 seconds  # Visual inspection
@@ -179,6 +186,7 @@ And I take screenshot  # Manual verification
 **Solutions**:
 
 **A. Incorrect UI-MAP Key**:
+
 ```gherkin
 # ❌ WRONG
 When I click "Save" button
@@ -188,6 +196,7 @@ When I click "save" button
 ```
 
 **B. Element Not Ready**:
+
 ```gherkin
 # Add explicit wait
 When I wait for page to load
@@ -195,16 +204,18 @@ And I click "save" button
 ```
 
 **C. Odoo Version Mismatch**:
+
 ```typescript
 // Check actual button label in Odoo 17
 // Update src/ui-map/buttons.ts if needed
 export const BUTTONS = {
-  create: 'New',  // Odoo 17 uses "New" not "Create"
+  create: 'New', // Odoo 17 uses "New" not "Create"
   // ...
 };
 ```
 
 **D. Selector Changed**:
+
 ```powershell
 # Run test in headed mode to debug
 $env:HEADLESS="false"; npx cucumber-js features/smoke.feature:12
@@ -218,11 +229,13 @@ $env:PWDEBUG="1"; npx cucumber-js features/smoke.feature:12
 ### Issue 3: API Authentication Fails
 
 **Symptoms**:
+
 - "Authentication failed: Invalid credentials"
 - "401 Unauthorized" errors
 - API tests fail immediately
 
 **Diagnosis**:
+
 ```powershell
 # Test API manually
 curl -X POST http://localhost:8069/web/session/authenticate `
@@ -233,6 +246,7 @@ curl -X POST http://localhost:8069/web/session/authenticate `
 **Solutions**:
 
 **A. Wrong Credentials**:
+
 ```powershell
 # Check .env file
 cat .env
@@ -244,12 +258,14 @@ ODOO_DATABASE=hora_db
 ```
 
 **B. Database Not Created**:
+
 ```powershell
 # Access Odoo at http://localhost:8069/web/database/manager
 # Create database "hora_db" if missing
 ```
 
 **C. Session Expired**:
+
 ```gherkin
 # Re-authenticate in Background
 Background:
@@ -257,6 +273,7 @@ Background:
 ```
 
 **D. Network Issues**:
+
 ```powershell
 # Test connectivity
 Test-NetConnection localhost -Port 8069
@@ -270,11 +287,13 @@ docker-compose ps
 ### Issue 4: Database Connection Errors
 
 **Symptoms**:
+
 - "Database client not initialized"
 - "Connection timeout" in DB steps
 - Tests skip database assertions
 
 **Diagnosis**:
+
 ```powershell
 # Check DB_ENABLED in .env
 cat .env | findstr DB_ENABLED
@@ -286,6 +305,7 @@ docker exec hora-qa-framework-db-1 psql -U odoo -d hora_db -c "SELECT 1"
 **Solutions**:
 
 **A. DB Testing Not Enabled**:
+
 ```bash
 # Add to .env file
 DB_ENABLED=true
@@ -297,6 +317,7 @@ DB_PASSWORD=odoo
 ```
 
 **B. PostgreSQL Not Running**:
+
 ```powershell
 # Start database container
 docker-compose up -d db
@@ -306,6 +327,7 @@ docker-compose ps db
 ```
 
 **C. Wrong Connection Parameters**:
+
 ```powershell
 # Test connection with psql
 docker exec -it hora-qa-framework-db-1 psql -U odoo -d hora_db
@@ -318,6 +340,7 @@ docker exec -it hora-qa-framework-db-1 psql -U odoo -d hora_db
 ### Issue 5: Tests Pass Locally but Fail in CI/CD
 
 **Symptoms**:
+
 - Tests pass on developer machine
 - Fail in GitHub Actions / Azure DevOps
 - Timing issues in CI
@@ -325,15 +348,17 @@ docker exec -it hora-qa-framework-db-1 psql -U odoo -d hora_db
 **Solutions**:
 
 **A. Increase Timeouts**:
+
 ```typescript
 // In cucumber.config.ts
 export default {
-  timeout: 60000,  // Increase to 60 seconds for CI
+  timeout: 60000, // Increase to 60 seconds for CI
   // ...
 };
 ```
 
 **B. Add Retry Logic**:
+
 ```gherkin
 # Add retry annotation
 @retry
@@ -342,6 +367,7 @@ Scenario: Flaky test
 ```
 
 **C. Wait for Services**:
+
 ```yaml
 # In CI/CD pipeline (GitHub Actions example)
 - name: Wait for Odoo
@@ -350,6 +376,7 @@ Scenario: Flaky test
 ```
 
 **D. Disable Parallel Execution**:
+
 ```bash
 # In package.json
 "test:ci": "cucumber-js --parallel 1"
@@ -360,6 +387,7 @@ Scenario: Flaky test
 ### Issue 6: Stale Test Data
 
 **Symptoms**:
+
 - Tests fail due to pre-existing data
 - "Duplicate key" errors
 - Assertions fail on unexpected records
@@ -367,6 +395,7 @@ Scenario: Flaky test
 **Solutions**:
 
 **A. Use Unique Identifiers**:
+
 ```gherkin
 # Use timestamps in test data
 When I fill "licensePlate" with "MD-TEST-{timestamp}"
@@ -379,6 +408,7 @@ const licensePlate = `MD-TEST-${timestamp}`;
 ```
 
 **B. Clean Up Before Test**:
+
 ```gherkin
 Background:
   Given Odoo API is authenticated
@@ -386,6 +416,7 @@ Background:
 ```
 
 **C. Reset Database (Nuclear Option)**:
+
 ```powershell
 # WARNING: Deletes ALL data
 docker-compose down -v
@@ -400,10 +431,12 @@ Start-Sleep -Seconds 30
 ### Issue 7: Slow Test Execution
 
 **Symptoms**:
+
 - Tests take too long to complete
 - Timeouts on simple operations
 
 **Diagnosis**:
+
 ```powershell
 # Profile test execution
 npx cucumber-js --format @cucumber/pretty-formatter
@@ -412,6 +445,7 @@ npx cucumber-js --format @cucumber/pretty-formatter
 **Solutions**:
 
 **A. Reduce Unnecessary Waits**:
+
 ```gherkin
 # ❌ BAD
 When I wait 5 seconds
@@ -422,6 +456,7 @@ When I click "save" button  # Has built-in wait
 ```
 
 **B. Use API for Setup**:
+
 ```gherkin
 # Instead of UI navigation for test data
 Given Odoo API is authenticated
@@ -431,15 +466,17 @@ When I create Odoo record in "fleet.vehicle" with:
 ```
 
 **C. Run in Parallel**:
+
 ```bash
 # Enable parallel execution
 npx cucumber-js --parallel 4
 ```
 
 **D. Optimize Selectors**:
+
 ```typescript
 // Use specific selectors
-this.page.getByRole('button', { name: 'Save', exact: true })
+this.page.getByRole('button', { name: 'Save', exact: true });
 ```
 
 ---
@@ -447,15 +484,17 @@ this.page.getByRole('button', { name: 'Save', exact: true })
 ### Issue 8: Screenshot/Video Not Captured
 
 **Symptoms**:
+
 - No screenshots in reports/screenshots/
 - Missing failure evidence
 
 **Solutions**:
 
 **A. Enable Screenshots**:
+
 ```typescript
 // In src/support/hooks.ts - Already configured
-After(async function(scenario) {
+After(async function (scenario) {
   if (scenario.result?.status === Status.FAILED) {
     await this.screenshot(`failure-${Date.now()}`);
   }
@@ -463,6 +502,7 @@ After(async function(scenario) {
 ```
 
 **B. Check Directory Permissions**:
+
 ```powershell
 # Ensure directory exists
 mkdir -p reports/screenshots
@@ -472,6 +512,7 @@ Test-Path reports/screenshots -PathType Container
 ```
 
 **C. Manual Screenshot for Debugging**:
+
 ```gherkin
 When I take screenshot "debug-vehicle-form"
 ```
@@ -481,12 +522,14 @@ When I take screenshot "debug-vehicle-form"
 ### Issue 9: TypeScript Compilation Errors
 
 **Symptoms**:
+
 - `npm run test:smoke` fails with TypeScript errors
 - "Cannot find module" errors
 
 **Solutions**:
 
 **A. Install Dependencies**:
+
 ```powershell
 # Clean install
 rm -rf node_modules package-lock.json
@@ -494,6 +537,7 @@ npm install
 ```
 
 **B. Type Check**:
+
 ```powershell
 # Check for type errors
 npm run type-check
@@ -503,6 +547,7 @@ npm run lint:fix
 ```
 
 **C. Verify tsconfig.json**:
+
 ```json
 {
   "compilerOptions": {
@@ -520,6 +565,7 @@ npm run lint:fix
 ### Issue 10: Odoo Module Not Loaded
 
 **Symptoms**:
+
 - "Model 'fleet.vehicle' does not exist"
 - 404 errors on fleet URLs
 - Missing menu items
@@ -527,6 +573,7 @@ npm run lint:fix
 **Solutions**:
 
 **A. Install Fleet Module**:
+
 ```bash
 # Access Odoo container
 docker exec -it hora-qa-framework-odoo-1 bash
@@ -536,12 +583,14 @@ docker exec -it hora-qa-framework-odoo-1 bash
 ```
 
 **B. Update Module List**:
+
 ```powershell
 # Restart Odoo with update
 docker-compose restart odoo
 ```
 
 **C. Check Module in Database**:
+
 ```sql
 -- Access PostgreSQL
 docker exec -it hora-qa-framework-db-1 psql -U odoo -d hora_db
@@ -557,6 +606,7 @@ SELECT name, state FROM ir_module_module WHERE name = 'fleet';
 ### Weekly Tasks
 
 #### ✅ Review Failed Tests
+
 ```powershell
 # Check last week's test results
 npm run report:cucumber
@@ -567,6 +617,7 @@ start reports/cucumber/index.html
 ```
 
 #### ✅ Update Test Data
+
 ```powershell
 # Clean up old test records
 docker exec -it hora-qa-framework-db-1 psql -U odoo -d hora_db
@@ -575,6 +626,7 @@ DELETE FROM fleet_vehicle WHERE license_plate LIKE 'MD-TEST-%' AND create_date <
 ```
 
 #### ✅ Dependency Updates
+
 ```powershell
 # Check for outdated packages
 npm outdated
@@ -590,6 +642,7 @@ npm update
 ### Monthly Tasks
 
 #### ✅ Performance Review
+
 ```powershell
 # Profile slow tests
 npx cucumber-js --format @cucumber/pretty-formatter > test-timing.log
@@ -599,6 +652,7 @@ cat test-timing.log | Select-String "ms"
 ```
 
 #### ✅ Coverage Analysis
+
 ```powershell
 # Review feature coverage
 # Ensure all critical flows have @critical tag
@@ -608,6 +662,7 @@ Get-ChildItem features -Recurse -Filter *.feature | Select-String "@critical"
 ```
 
 #### ✅ Docker Image Updates
+
 ```powershell
 # Pull latest Odoo image
 docker-compose pull
@@ -620,6 +675,7 @@ npm run test:smoke
 ```
 
 #### ✅ Database Cleanup
+
 ```powershell
 # Backup database
 docker exec hora-qa-framework-db-1 pg_dump -U odoo hora_db > backup-$(Get-Date -Format 'yyyy-MM-dd').sql
@@ -633,6 +689,7 @@ docker exec -it hora-qa-framework-db-1 psql -U odoo -d hora_db -c "DELETE FROM f
 ### Quarterly Tasks
 
 #### ✅ Framework Upgrade
+
 ```powershell
 # Update Playwright
 npm install @playwright/test@latest
@@ -645,6 +702,7 @@ npm run test:all
 ```
 
 #### ✅ Security Audit
+
 ```powershell
 # Run npm security audit
 npm audit
@@ -657,6 +715,7 @@ npm audit --json | ConvertFrom-Json | Select-Object -ExpandProperty vulnerabilit
 ```
 
 #### ✅ Documentation Review
+
 ```powershell
 # Update step library
 # Review docs/STEP_LIBRARY.md for new steps
@@ -692,7 +751,7 @@ npx cucumber-js features/smoke.feature
 
 ```typescript
 // In step definition, add:
-await this.page.pause();  // Opens Playwright Inspector
+await this.page.pause(); // Opens Playwright Inspector
 ```
 
 ### Inspect Element Selectors
@@ -725,26 +784,27 @@ cat logs/test-execution.log
 
 ## Environment Variables Reference
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `BASE_URL` | `http://localhost:8069` | Odoo instance URL |
-| `ODOO_USERNAME` | `admin` | Odoo login username |
-| `ODOO_PASSWORD` | `admin` | Odoo login password |
-| `ODOO_DATABASE` | `hora_db` | Odoo database name |
-| `HEADLESS` | `true` | Run browser in headless mode |
-| `SLOWMO` | `0` | Slow down actions (milliseconds) |
-| `DB_ENABLED` | `false` | Enable database assertions |
-| `DB_HOST` | `localhost` | PostgreSQL host |
-| `DB_PORT` | `5432` | PostgreSQL port |
-| `DB_NAME` | `hora_db` | Database name |
-| `DB_USER` | `odoo` | Database username |
-| `DB_PASSWORD` | `odoo` | Database password |
-| `TIMEOUT` | `30000` | Default step timeout (ms) |
-| `DEBUG` | - | Enable debug logging |
+| Variable        | Default                 | Description                      |
+| --------------- | ----------------------- | -------------------------------- |
+| `BASE_URL`      | `http://localhost:8069` | Odoo instance URL                |
+| `ODOO_USERNAME` | `admin`                 | Odoo login username              |
+| `ODOO_PASSWORD` | `admin`                 | Odoo login password              |
+| `ODOO_DATABASE` | `hora_db`               | Odoo database name               |
+| `HEADLESS`      | `true`                  | Run browser in headless mode     |
+| `SLOWMO`        | `0`                     | Slow down actions (milliseconds) |
+| `DB_ENABLED`    | `false`                 | Enable database assertions       |
+| `DB_HOST`       | `localhost`             | PostgreSQL host                  |
+| `DB_PORT`       | `5432`                  | PostgreSQL port                  |
+| `DB_NAME`       | `hora_db`               | Database name                    |
+| `DB_USER`       | `odoo`                  | Database username                |
+| `DB_PASSWORD`   | `odoo`                  | Database password                |
+| `TIMEOUT`       | `30000`                 | Default step timeout (ms)        |
+| `DEBUG`         | -                       | Enable debug logging             |
 
 ### Setting Environment Variables
 
 **PowerShell (Windows)**:
+
 ```powershell
 $env:HEADLESS="false"
 $env:SLOWMO="1000"
@@ -752,6 +812,7 @@ npx cucumber-js --tags @smoke
 ```
 
 **Bash (Linux/Mac)**:
+
 ```bash
 export HEADLESS=false
 export SLOWMO=1000
@@ -759,6 +820,7 @@ npx cucumber-js --tags @smoke
 ```
 
 **Permanent (add to .env file)**:
+
 ```bash
 HEADLESS=false
 SLOWMO=1000
@@ -770,6 +832,7 @@ TIMEOUT=60000
 ## Useful SQL Queries
 
 ### List All Test Vehicles
+
 ```sql
 SELECT id, license_plate, model_id, driver_id, create_date
 FROM fleet_vehicle
@@ -778,6 +841,7 @@ ORDER BY create_date DESC;
 ```
 
 ### Count Vehicles by State
+
 ```sql
 SELECT state, COUNT(*)
 FROM fleet_vehicle
@@ -785,6 +849,7 @@ GROUP BY state;
 ```
 
 ### Find Vehicles Without Drivers
+
 ```sql
 SELECT id, license_plate
 FROM fleet_vehicle
@@ -792,12 +857,14 @@ WHERE driver_id IS NULL;
 ```
 
 ### Delete Test Data
+
 ```sql
 DELETE FROM fleet_vehicle
 WHERE license_plate ~ '^(MD-TEST|MD-TEMP|TEST)';
 ```
 
 ### Check Database Size
+
 ```sql
 SELECT pg_size_pretty(pg_database_size('hora_db')) AS database_size;
 ```
@@ -807,17 +874,20 @@ SELECT pg_size_pretty(pg_database_size('hora_db')) AS database_size;
 ## Escalation Procedures
 
 ### Level 1: Self-Service
+
 - Review this runbook
 - Check logs and error messages
 - Run tests in debug mode
 - Search GitHub issues
 
 ### Level 2: Team Support
+
 - Post in QA Slack channel
 - Tag `@qa-team` with issue details
 - Provide: error message, feature file, screenshots
 
 ### Level 3: Engineering Escalation
+
 - Create GitHub issue with:
   - Steps to reproduce
   - Expected vs actual behavior
@@ -826,6 +896,7 @@ SELECT pg_size_pretty(pg_database_size('hora_db')) AS database_size;
 - Tag: `@engineering-lead`
 
 ### Level 4: Critical Production Issue
+
 - Immediately notify:
   - QA Team Lead
   - DevOps Team
@@ -882,10 +953,10 @@ If all commands succeed, framework is healthy ✅
 
 ## Change Log
 
-| Date | Author | Changes |
-|------|--------|---------|
+| Date       | Author  | Changes                  |
+| ---------- | ------- | ------------------------ |
 | 2026-01-13 | QA Team | Initial runbook creation |
-| - | - | - |
+| -          | -       | -                        |
 
 ---
 

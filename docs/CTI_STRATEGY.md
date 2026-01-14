@@ -2,9 +2,14 @@
 
 ## Executive Summary
 
-This document outlines the strategy for testing **Computer Telephony Integration (CTI)** functionality in the Hora Services fleet management system without access to a real telephony infrastructure. The approach uses a **mock CTI server** that simulates Asterisk/FreePBX behavior, enabling comprehensive testing of call flows, dispatch workflows, and emergency protocols at a fraction of the cost of a real phone system.
+This document outlines the strategy for testing **Computer Telephony Integration (CTI)** functionality in the
+Hora Services fleet management system without access to a real telephony infrastructure.
+The approach uses a **mock CTI server** that simulates Asterisk/FreePBX behavior, enabling comprehensive
+testing of call flows, dispatch workflows, and emergency protocols at a fraction of the cost of a real phone
+system.
 
-**Rationale**: Real CTI testing requires expensive PBX licenses, phone lines, and complex infrastructure. For automated testing, mocking provides 95% of the value at 5% of the cost.
+**Rationale**: Real CTI testing requires expensive PBX licenses, phone lines, and complex infrastructure.
+For automated testing, mocking provides 95% of the value at 5% of the cost.
 
 ---
 
@@ -49,16 +54,16 @@ Call details logged in Odoo (duration, recording URL, outcome)
 
 ### Challenges with Real CTI Testing
 
-| Challenge | Impact | Cost/Complexity |
-|-----------|--------|-----------------|
-| **PBX Licensing** | Asterisk/FreePBX licenses ($500-$5000/year) | High |
-| **Phone Lines** | SIP trunks or analog lines ($20-$50/line/month) | Medium |
-| **Test Phones** | Physical phones or softphones for testing | Low-Medium |
-| **Infrastructure** | PBX server, network config, firewall rules | High |
-| **Telephony Expertise** | Specialized knowledge to maintain PBX | High |
-| **Call Costs** | Charges for test calls (even internal) | Medium |
-| **CI/CD Integration** | Cannot make real calls from CI pipeline | Very High |
-| **Test Isolation** | Risk of accidentally calling real drivers | Critical |
+| Challenge               | Impact                                          | Cost/Complexity |
+| ----------------------- | ----------------------------------------------- | --------------- |
+| **PBX Licensing**       | Asterisk/FreePBX licenses ($500-$5000/year)     | High            |
+| **Phone Lines**         | SIP trunks or analog lines ($20-$50/line/month) | Medium          |
+| **Test Phones**         | Physical phones or softphones for testing       | Low-Medium      |
+| **Infrastructure**      | PBX server, network config, firewall rules      | High            |
+| **Telephony Expertise** | Specialized knowledge to maintain PBX           | High            |
+| **Call Costs**          | Charges for test calls (even internal)          | Medium          |
+| **CI/CD Integration**   | Cannot make real calls from CI pipeline         | Very High       |
+| **Test Isolation**      | Risk of accidentally calling real drivers       | Critical        |
 
 ### Benefits of Mocking
 
@@ -68,7 +73,7 @@ Call details logged in Odoo (duration, recording URL, outcome)
 ✅ **Safety**: No risk of calling real people during tests  
 ✅ **CI/CD**: Runs in Docker, GitHub Actions, any environment  
 ✅ **Debugging**: Full visibility into call state machines  
-✅ **Scalability**: Test 1000 concurrent calls without hardware  
+✅ **Scalability**: Test 1000 concurrent calls without hardware
 
 ---
 
@@ -145,6 +150,7 @@ stateDiagram-v2
 **User Story**: Dispatcher wants to call driver John Smith
 
 **Workflow**:
+
 ```typescript
 // Odoo UI: User clicks phone icon on driver record
 // JavaScript sends request to mock CTI server
@@ -152,21 +158,22 @@ const response = await fetch('http://localhost:5000/api/cti/call', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
-    from: 'dispatcher-001',      // Dispatcher ID
-    to: '+14155551234',          // Driver phone
+    from: 'dispatcher-001', // Dispatcher ID
+    to: '+14155551234', // Driver phone
     context: {
       driverId: 42,
       driverName: 'John Smith',
       vehiclePlate: 'MD-FLEET-100',
-      reason: 'dispatch_change'
-    }
-  })
+      reason: 'dispatch_change',
+    },
+  }),
 });
 
 // Response: { callId: 'call-123', status: 'ringing' }
 ```
 
 **Mock Server Behavior**:
+
 1. Creates call session with ID `call-123`
 2. Transitions state: `idle` → `ringing`
 3. Broadcasts WebSocket event: `{ event: 'call.ringing', callId: 'call-123' }`
@@ -178,15 +185,16 @@ const response = await fetch('http://localhost:5000/api/cti/call', {
 **User Story**: Driver calls automated system to check in at pickup location
 
 **Workflow**:
+
 ```typescript
 // Driver dials IVR number: 1-800-555-UELINE
 // Mock CTI receives inbound call
 const inboundCall = {
   callId: 'call-456',
   direction: 'inbound',
-  from: '+14155551234',        // Driver phone
-  to: '1-800-555-8354',        // IVR number
-  type: 'ivr_checkin'
+  from: '+14155551234', // Driver phone
+  to: '1-800-555-8354', // IVR number
+  type: 'ivr_checkin',
 };
 
 // IVR flow:
@@ -198,6 +206,7 @@ const inboundCall = {
 ```
 
 **Mock Server Behavior**:
+
 1. Receives inbound call
 2. Plays simulated IVR prompts (text responses, no audio)
 3. Receives DTMF tones (keypad inputs)
@@ -209,6 +218,7 @@ const inboundCall = {
 **User Story**: Driver presses panic button in mobile app during emergency
 
 **Workflow**:
+
 ```typescript
 // Mobile app sends emergency signal
 const emergencyCall = await fetch('http://localhost:5000/api/cti/emergency', {
@@ -218,8 +228,8 @@ const emergencyCall = await fetch('http://localhost:5000/api/cti/emergency', {
     driverPhone: '+14155551234',
     location: { lat: 37.7749, lng: -122.4194 },
     vehiclePlate: 'MD-FLEET-100',
-    timestamp: '2026-01-13T14:32:00Z'
-  })
+    timestamp: '2026-01-13T14:32:00Z',
+  }),
 });
 
 // Mock CTI:
@@ -416,6 +426,7 @@ Content-Type: application/json
 ```
 
 **Response**:
+
 ```json
 {
   "callId": "call-1a2b3c4d",
@@ -443,6 +454,7 @@ Content-Type: application/json
 ```
 
 **Response**:
+
 ```json
 {
   "callId": "call-1a2b3c4d",
@@ -466,6 +478,7 @@ Content-Type: application/json
 ```
 
 **Response**:
+
 ```json
 {
   "callId": "call-1a2b3c4d",
@@ -482,6 +495,7 @@ GET /api/cti/status?callId=call-1a2b3c4d
 ```
 
 **Response**:
+
 ```json
 {
   "callId": "call-1a2b3c4d",
@@ -589,7 +603,7 @@ interface Call {
 const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
-  cors: { origin: '*' }
+  cors: { origin: '*' },
 });
 
 app.use(express.json());
@@ -600,7 +614,7 @@ const calls = new Map<string, Call>();
 // POST /api/cti/call - Initiate call
 app.post('/api/cti/call', (req, res) => {
   const { from, to, context } = req.body;
-  
+
   const call: Call = {
     callId: uuidv4(),
     from,
@@ -609,12 +623,12 @@ app.post('/api/cti/call', (req, res) => {
     startedAt: new Date(),
     context,
   };
-  
+
   calls.set(call.callId, call);
-  
+
   // Broadcast to connected clients
   io.emit('call.ringing', call);
-  
+
   // Simulate auto-answer after 3 seconds
   setTimeout(() => {
     call.status = 'answered';
@@ -622,7 +636,7 @@ app.post('/api/cti/call', (req, res) => {
     calls.set(call.callId, call);
     io.emit('call.answered', call);
   }, 3000);
-  
+
   // Simulate auto-hangup after 30 seconds
   setTimeout(() => {
     if (call.status === 'answered') {
@@ -633,7 +647,7 @@ app.post('/api/cti/call', (req, res) => {
       io.emit('call.ended', call);
     }
   }, 30000);
-  
+
   res.json(call);
 });
 
@@ -641,21 +655,21 @@ app.post('/api/cti/call', (req, res) => {
 app.post('/api/cti/hangup', (req, res) => {
   const { callId } = req.body;
   const call = calls.get(callId);
-  
+
   if (!call) {
     return res.status(404).json({ error: 'Call not found' });
   }
-  
+
   call.status = 'ended';
   call.endedAt = new Date();
-  
+
   if (call.answeredAt) {
     call.duration = Math.floor((call.endedAt.getTime() - call.answeredAt.getTime()) / 1000);
   }
-  
+
   calls.set(callId, call);
   io.emit('call.ended', call);
-  
+
   res.json(call);
 });
 
@@ -663,18 +677,18 @@ app.post('/api/cti/hangup', (req, res) => {
 app.get('/api/cti/status', (req, res) => {
   const callId = req.query.callId as string;
   const call = calls.get(callId);
-  
+
   if (!call) {
     return res.status(404).json({ error: 'Call not found' });
   }
-  
+
   res.json(call);
 });
 
 // WebSocket connection
 io.on('connection', (socket) => {
   console.log('Client connected:', socket.id);
-  
+
   socket.on('disconnect', () => {
     console.log('Client disconnected:', socket.id);
   });
@@ -708,6 +722,7 @@ npx ts-node src/mock-cti-server/server.ts
 When budget and requirements justify real telephony integration:
 
 ### Prerequisites
+
 - [ ] Select PBX provider (Asterisk, FreePBX, Twilio, AWS Connect)
 - [ ] Provision SIP trunks or phone lines
 - [ ] Configure PBX server (on-prem or cloud)
@@ -716,6 +731,7 @@ When budget and requirements justify real telephony integration:
 - [ ] Configure IVR flows
 
 ### Integration Steps
+
 - [ ] Replace mock CTI client with real Asterisk AMI/ARI client
 - [ ] Update authentication (API keys, SIP credentials)
 - [ ] Implement call recording storage (S3/Azure Blob)
@@ -724,12 +740,14 @@ When budget and requirements justify real telephony integration:
 - [ ] Test call quality (latency, jitter, packet loss)
 
 ### Testing Approach
+
 - [ ] Keep mock CTI for automated tests
 - [ ] Use real CTI for manual/exploratory testing
 - [ ] Implement feature flag: `USE_REAL_CTI=true`
 - [ ] Test failover scenarios (PBX down, network issues)
 
 ### Cost Estimate
+
 - **PBX License**: $2,000-$10,000 (one-time or annual)
 - **SIP Trunks**: $20-$50/line/month × 10 lines = $200-$500/month
 - **Call Recording Storage**: $50-$200/month
@@ -750,6 +768,7 @@ The mock CTI strategy provides:
 ✅ **Future-proof** architecture ready for real CTI integration
 
 **Recommendation**: Use mock CTI for all automated testing. Invest in real CTI only when:
+
 1. Business requires live call monitoring/quality assurance
 2. Regulatory compliance mandates real call recording
 3. Budget allocated ($25K+/year)

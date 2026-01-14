@@ -113,25 +113,33 @@ Before({ timeout: 60000 }, async function (this: CustomWorld, scenario) {
         const vehicles = await this.fleetEndpoints.searchVehiclesByPlate(pattern.replace('%', ''));
         for (const vehicle of vehicles) {
           try {
+            const vehicleId = vehicle.id;
+            if (!vehicleId) {
+              continue;
+            }
+
             // First, delete driver assignment logs to avoid FK constraint
-            const assignmentLogs = await this.odooApi.search('fleet.vehicle.assignation.log', [['vehicle_id', '=', vehicle.id]]);
+            const assignmentLogs = await this.odooApi.search('fleet.vehicle.assignation.log', [['vehicle_id', '=', vehicleId]]);
             if (assignmentLogs.length > 0) {
-              await this.odooApi.execute('fleet.vehicle.assignation.log', 'unlink', [assignmentLogs]);
+              await this.odooApi.unlink('fleet.vehicle.assignation.log', assignmentLogs);
             }
             
             // Delete odometer records
-            const odometerRecords = await this.odooApi.search('fleet.vehicle.odometer', [['vehicle_id', '=', vehicle.id]]);
+            const odometerRecords = await this.odooApi.search('fleet.vehicle.odometer', [['vehicle_id', '=', vehicleId]]);
             if (odometerRecords.length > 0) {
-              await this.odooApi.execute('fleet.vehicle.odometer', 'unlink', [odometerRecords]);
+              await this.odooApi.unlink('fleet.vehicle.odometer', odometerRecords);
             }
             
             // Now delete the vehicle
-            await this.odooApi.execute('fleet.vehicle', 'unlink', [[vehicle.id]]);
+            await this.odooApi.unlink('fleet.vehicle', [vehicleId]);
             totalDeleted++;
           } catch {
             // Try archiving if delete fails
             try {
-              await this.odooApi.execute('fleet.vehicle', 'write', [[vehicle.id], { active: false }]);
+              const vehicleId = vehicle.id;
+              if (vehicleId) {
+                await this.odooApi.write('fleet.vehicle', [vehicleId], { active: false });
+              }
             } catch {
               // Ignore
             }
@@ -266,17 +274,17 @@ After(async function (this: CustomWorld, scenario) {
     try {
       for (const plate of testVehicles) {
         const vehicle = await this.fleetEndpoints.getVehicleByPlate(plate);
-        if (vehicle) {
+        if (vehicle?.id) {
           // First, delete driver assignment logs to avoid FK constraint
           const assignmentLogs = await this.odooApi.search('fleet.vehicle.assignation.log', [['vehicle_id', '=', vehicle.id]]);
           if (assignmentLogs.length > 0) {
-            await this.odooApi.execute('fleet.vehicle.assignation.log', 'unlink', [assignmentLogs]);
+            await this.odooApi.unlink('fleet.vehicle.assignation.log', assignmentLogs);
           }
           
           // Delete odometer records
           const odometerRecords = await this.odooApi.search('fleet.vehicle.odometer', [['vehicle_id', '=', vehicle.id]]);
           if (odometerRecords.length > 0) {
-            await this.odooApi.execute('fleet.vehicle.odometer', 'unlink', [odometerRecords]);
+            await this.odooApi.unlink('fleet.vehicle.odometer', odometerRecords);
           }
           
           // Now delete the vehicle
@@ -316,7 +324,7 @@ AfterAll(async function () {
  * BeforeStep Hook
  * Records step start time for diagnostics
  */
-BeforeStep(async function (step) {
+BeforeStep(async function (_step) {
   if (DEBUG_TIMING) {
     stepStartTime = Date.now();
   }

@@ -25,7 +25,7 @@ async function cleanTestData() {
     const env = getEnvConfig();
     
     // Initialize Odoo API client
-    const odooApi = new OdooJsonRpcClient(env.odooBaseUrl);
+    const odooApi = new OdooJsonRpcClient(env.baseUrl);
     
     // Authenticate
     console.log('🔐 Authenticating with Odoo...');

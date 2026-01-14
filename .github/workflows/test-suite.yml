@@ -184,6 +184,14 @@ jobs:
       
       - name: Install Playwright browsers
         run: npx playwright install chromium
+
+      - name: Restore Allure history (Trend)
+        uses: actions/cache@v4
+        with:
+          path: allure-history
+          key: allure-history-${{ github.workflow }}-${{ github.ref_name }}-${{ github.run_id }}
+          restore-keys: |
+            allure-history-${{ github.workflow }}-${{ github.ref_name }}-
       
       - name: Start Docker services
         run: docker-compose up -d
@@ -209,7 +217,7 @@ jobs:
       - name: Generate Allure report
         if: always()
         run: |
-          npm run report:allure || echo "Allure report generation skipped (no results)"
+          npm run report:allure:trend || echo "Allure report generation skipped (no results)"
       
       - name: Upload Cucumber report
         if: always()

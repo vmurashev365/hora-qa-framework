@@ -5,6 +5,7 @@
 This document defines the comprehensive strategy for managing test data throughout the QA lifecycle in the Hora Services framework. Proper data management is critical for test reliability, maintainability, and compliance with data protection regulations (GDPR, CCPA).
 
 **Core Principles**:
+
 1. **Isolation**: Each test should be independent and not affect others
 2. **Repeatability**: Tests produce same results on every run
 3. **Cleanup**: Test data is always removed after execution
@@ -32,6 +33,7 @@ This document defines the comprehensive strategy for managing test data througho
 **When**: Before test execution (BeforeAll, BeforeEach, test setup)
 
 **Methods**:
+
 - Load fixtures from JSON/YAML files
 - Generate data using factory functions
 - Create via API (OdooJsonRpcClient)
@@ -44,6 +46,7 @@ This document defines the comprehensive strategy for managing test data througho
 **When**: During test execution
 
 **Methods**:
+
 - Read data from database
 - Query via API
 - Interact via UI
@@ -56,6 +59,7 @@ This document defines the comprehensive strategy for managing test data througho
 **When**: After test execution (AfterEach, AfterAll, test teardown)
 
 **Methods**:
+
 - Delete via API
 - Database rollback (transactions)
 - Truncate test tables
@@ -72,21 +76,25 @@ This document defines the comprehensive strategy for managing test data througho
 **Description**: Odoo's built-in demo data (vehicles, drivers, trips)
 
 **Use Cases**:
+
 - Smoke tests (verify core functionality works)
 - Quick validation in development
 - Read-only tests (no modifications)
 
 **Pros**:
+
 - ✅ Already exists, no setup needed
 - ✅ Realistic data structure
 - ✅ Fast to use
 
 **Cons**:
+
 - ❌ Shared across all tests (not isolated)
 - ❌ Cannot be modified without affecting other tests
 - ❌ May change when Odoo updates
 
 **Example**:
+
 ```gherkin
 @smoke @demo-data
 Scenario: View demo vehicles
@@ -106,6 +114,7 @@ Scenario: View demo vehicles
 **Description**: Static test data stored in `tests/fixtures/` directory
 
 **Structure**:
+
 ```
 tests/
 └── fixtures/
@@ -123,6 +132,7 @@ tests/
 ```
 
 **Example Fixture**:
+
 ```json
 // tests/fixtures/vehicles/basic-vehicle.json
 {
@@ -138,6 +148,7 @@ tests/
 ```
 
 **Loading Fixtures**:
+
 ```typescript
 // src/utils/fixtures.ts
 import * as fs from 'fs';
@@ -145,18 +156,18 @@ import * as path from 'path';
 
 export class FixtureLoader {
   private fixturesPath = path.join(__dirname, '../../tests/fixtures');
-  
+
   loadFixture<T>(category: string, name: string): T {
     const fixturePath = path.join(this.fixturesPath, category, `${name}.json`);
     const content = fs.readFileSync(fixturePath, 'utf-8');
     return JSON.parse(content) as T;
   }
-  
+
   loadAllFixtures<T>(category: string): T[] {
     const categoryPath = path.join(this.fixturesPath, category);
-    const files = fs.readdirSync(categoryPath).filter(f => f.endsWith('.json'));
-    
-    return files.map(file => {
+    const files = fs.readdirSync(categoryPath).filter((f) => f.endsWith('.json'));
+
+    return files.map((file) => {
       const content = fs.readFileSync(path.join(categoryPath, file), 'utf-8');
       return JSON.parse(content) as T;
     });
@@ -177,12 +188,14 @@ const vehicleData = fixtureLoader.loadFixture('vehicles', 'basic-vehicle');
 **Description**: TypeScript classes that generate test data programmatically
 
 **Benefits**:
+
 - ✅ Unique data on every run
 - ✅ Customizable via parameters
 - ✅ Realistic randomness
 - ✅ Easy to maintain
 
 **Example Factory**:
+
 ```typescript
 // src/utils/factories/VehicleFactory.ts
 import { faker } from '@faker-js/faker';
@@ -203,7 +216,7 @@ export class VehicleFactory {
    */
   static create(overrides?: Partial<VehicleData>): VehicleData {
     const timestamp = Date.now();
-    
+
     return {
       license_plate: `MD-TEST-${timestamp.toString().slice(-6)}`,
       model_id: 1,
@@ -215,21 +228,21 @@ export class VehicleFactory {
       ...overrides, // Override defaults with custom values
     };
   }
-  
+
   /**
    * Generate multiple vehicles
    */
   static createBatch(count: number, overrides?: Partial<VehicleData>): VehicleData[] {
     return Array.from({ length: count }, () => this.create(overrides));
   }
-  
+
   /**
    * Generate vehicle with assigned driver
    */
   static createWithDriver(driverId: number): VehicleData {
     return this.create({ driver_id: driverId });
   }
-  
+
   /**
    * Generate electric vehicle
    */
@@ -243,17 +256,18 @@ export class VehicleFactory {
 ```
 
 **Usage in Tests**:
+
 ```typescript
 // In step definition
 import { VehicleFactory } from '../utils/factories/VehicleFactory';
 
-When('I create a test vehicle', async function() {
+When('I create a test vehicle', async function () {
   const vehicleData = VehicleFactory.create();
   const vehicleId = await this.odooApi.create('fleet.vehicle', vehicleData);
   this.setTestData('lastCreatedVehicle', vehicleId);
 });
 
-When('I create {int} vehicles', async function(count: number) {
+When('I create {int} vehicles', async function (count: number) {
   const vehicles = VehicleFactory.createBatch(count);
   for (const vehicle of vehicles) {
     await this.odooApi.create('fleet.vehicle', vehicle);
@@ -262,6 +276,7 @@ When('I create {int} vehicles', async function(count: number) {
 ```
 
 **Factory for Drivers**:
+
 ```typescript
 // src/utils/factories/DriverFactory.ts
 import { faker } from '@faker-js/faker';
@@ -279,7 +294,7 @@ export class DriverFactory {
   static create(overrides?: Partial<DriverData>): DriverData {
     const firstName = faker.person.firstName();
     const lastName = faker.person.lastName();
-    
+
     return {
       name: `${firstName} ${lastName}`,
       phone: faker.phone.number('+1##########'),
@@ -302,32 +317,36 @@ export class DriverFactory {
 **Description**: Create test data via OdooJsonRpcClient during test setup
 
 **Benefits**:
+
 - ✅ Fast (no UI navigation)
 - ✅ Reliable (no UI flakiness)
 - ✅ Reusable across tests
 - ✅ Easy cleanup (know IDs)
 
 **Example**:
+
 ```typescript
 // In hooks.ts - Create data before test
-Before({ tags: '@vehicle-tests' }, async function() {
+Before({ tags: '@vehicle-tests' }, async function () {
   // Create test vehicle via API
   const vehicleData = VehicleFactory.create();
   const vehicleId = await this.odooApi.create('fleet.vehicle', vehicleData);
-  
+
   // Store for use in test
   this.setTestData('testVehicleId', vehicleId);
   this.setTestData('testVehiclePlate', vehicleData.license_plate);
 });
 
 // In test
-When('I view my test vehicle', async function() {
+When('I view my test vehicle', async function () {
   const plate = this.getTestData('testVehiclePlate');
-  await this.page.goto(`${this.getBaseUrl()}/web#model=fleet.vehicle&id=${this.getTestData('testVehicleId')}`);
+  await this.page.goto(
+    `${this.getBaseUrl()}/web#model=fleet.vehicle&id=${this.getTestData('testVehicleId')}`
+  );
 });
 
 // Cleanup after test
-After({ tags: '@vehicle-tests' }, async function() {
+After({ tags: '@vehicle-tests' }, async function () {
   const vehicleId = this.getTestData('testVehicleId');
   if (vehicleId) {
     await this.odooApi.unlink('fleet.vehicle', vehicleId);
@@ -346,23 +365,25 @@ After({ tags: '@vehicle-tests' }, async function() {
 **Concept**: Use timestamps, UUIDs, or counters to ensure uniqueness
 
 **Implementation**:
+
 ```typescript
 // Timestamp-based
-const licensePlate = `MD-TEST-${Date.now()}`;  // MD-TEST-1705154832145
+const licensePlate = `MD-TEST-${Date.now()}`; // MD-TEST-1705154832145
 
 // UUID-based
 import { v4 as uuidv4 } from 'uuid';
-const licensePlate = `MD-${uuidv4().substring(0, 8)}`;  // MD-a3f2b1c4
+const licensePlate = `MD-${uuidv4().substring(0, 8)}`; // MD-a3f2b1c4
 
 // Counter-based (if needed)
 let counter = 0;
-const licensePlate = `MD-TEST-${String(counter++).padStart(6, '0')}`;  // MD-TEST-000001
+const licensePlate = `MD-TEST-${String(counter++).padStart(6, '0')}`; // MD-TEST-000001
 ```
 
 **Best Practice**:
+
 ```typescript
 // ✅ GOOD - Always unique
-const vehicle = VehicleFactory.create();  // Uses timestamp internally
+const vehicle = VehicleFactory.create(); // Uses timestamp internally
 
 // ❌ BAD - Hardcoded, will fail on second run
 const vehicle = { license_plate: 'TEST-001' };
@@ -375,35 +396,37 @@ const vehicle = { license_plate: 'TEST-001' };
 **Concept**: Wrap test in transaction, rollback after completion
 
 **Implementation**:
+
 ```typescript
 // src/db/PgClient.ts
 export class PgClient {
   async beginTransaction(): Promise<void> {
     await this.client.query('BEGIN');
   }
-  
+
   async rollback(): Promise<void> {
     await this.client.query('ROLLBACK');
   }
-  
+
   async commit(): Promise<void> {
     await this.client.query('COMMIT');
   }
 }
 
 // In hooks.ts
-BeforeEach({ tags: '@database' }, async function() {
+BeforeEach({ tags: '@database' }, async function () {
   await this.dbClient.beginTransaction();
 });
 
-AfterEach({ tags: '@database' }, async function() {
-  await this.dbClient.rollback();  // Undo all changes
+AfterEach({ tags: '@database' }, async function () {
+  await this.dbClient.rollback(); // Undo all changes
 });
 ```
 
 **When to Use**: Database-intensive tests, when you need perfect cleanup
 
-**Limitations**: 
+**Limitations**:
+
 - Cannot rollback external API calls
 - Cannot rollback file uploads
 - May conflict with Odoo's ORM transactions
@@ -415,6 +438,7 @@ AfterEach({ tags: '@database' }, async function() {
 **Concept**: Use separate database schema for tests
 
 **Implementation**:
+
 ```sql
 -- Create test schema
 CREATE SCHEMA IF NOT EXISTS test_data;
@@ -435,25 +459,26 @@ CREATE TABLE test_data.fleet_vehicle AS TABLE public.fleet_vehicle;
 **Concept**: Explicitly delete created data after test
 
 **Implementation**:
+
 ```typescript
 // src/support/hooks.ts
 import { After, Status } from '@cucumber/cucumber';
 
-After(async function(scenario) {
+After(async function (scenario) {
   // Get all created IDs from test context
   const createdVehicles = this.getTestData('createdVehicleIds') || [];
   const createdDrivers = this.getTestData('createdDriverIds') || [];
-  
+
   // Delete vehicles
   if (createdVehicles.length > 0) {
     await this.odooApi.unlink('fleet.vehicle', createdVehicles);
   }
-  
+
   // Delete drivers
   if (createdDrivers.length > 0) {
     await this.odooApi.unlink('fleet.driver', createdDrivers);
   }
-  
+
   // Take screenshot if test failed
   if (scenario.result?.status === Status.FAILED) {
     await this.screenshot(`failure-${Date.now()}`);
@@ -462,12 +487,13 @@ After(async function(scenario) {
 ```
 
 **Tracking Created Records**:
+
 ```typescript
 // In step definition
-When('I create vehicle via API', async function() {
+When('I create vehicle via API', async function () {
   const vehicleData = VehicleFactory.create();
   const vehicleId = await this.odooApi.create('fleet.vehicle', vehicleData);
-  
+
   // Track for cleanup
   const createdIds = this.getTestData('createdVehicleIds') || [];
   createdIds.push(vehicleId);
@@ -482,13 +508,14 @@ When('I create vehicle via API', async function() {
 **Concept**: Delete all test data matching pattern
 
 **Implementation**:
+
 ```sql
 -- Delete all test vehicles (license plate starts with MD-TEST)
-DELETE FROM fleet_vehicle 
+DELETE FROM fleet_vehicle
 WHERE license_plate LIKE 'MD-TEST%';
 
 -- Delete all test drivers (email ends with @test-ueline.com)
-DELETE FROM res_partner 
+DELETE FROM res_partner
 WHERE email LIKE '%@test-ueline.com';
 
 -- Reset sequences if needed
@@ -496,6 +523,7 @@ ALTER SEQUENCE fleet_vehicle_id_seq RESTART WITH 1000;
 ```
 
 **Script**:
+
 ```typescript
 // scripts/clean-test-data.ts
 import { PgClient } from '../src/db/PgClient';
@@ -508,23 +536,23 @@ async function cleanTestData() {
     user: 'odoo',
     password: 'odoo',
   });
-  
+
   await db.connect();
-  
+
   console.log('Cleaning test vehicles...');
   const vehicleResult = await db.query(`
     DELETE FROM fleet_vehicle 
     WHERE license_plate LIKE 'MD-TEST%' OR license_plate LIKE 'MD-TEMP%'
   `);
   console.log(`Deleted ${vehicleResult.rowCount} vehicles`);
-  
+
   console.log('Cleaning test drivers...');
   const driverResult = await db.query(`
     DELETE FROM res_partner 
     WHERE email LIKE '%@test-ueline.com'
   `);
   console.log(`Deleted ${driverResult.rowCount} drivers`);
-  
+
   await db.disconnect();
 }
 
@@ -548,7 +576,7 @@ import { faker } from '@faker-js/faker';
 
 // ✅ GOOD - Fake but realistic
 const driver = {
-  name: faker.person.fullName(),           // "John Smith"
+  name: faker.person.fullName(), // "John Smith"
   phone: faker.phone.number('+1##########'), // "+14155551234"
   email: faker.internet.email({ provider: 'test.com' }),
   address: faker.location.streetAddress(), // "123 Main St"
@@ -557,7 +585,7 @@ const driver = {
 // ❌ BAD - Real customer data
 const driver = {
   name: 'John Smith',
-  phone: '+14155551234',  // Might be real!
+  phone: '+14155551234', // Might be real!
   email: 'john.smith@real-company.com',
 };
 ```
@@ -567,11 +595,13 @@ const driver = {
 ### GDPR Compliance
 
 **Requirements**:
+
 1. No real customer data in test environments
 2. Test data must be clearly marked as test
 3. Must be able to delete all test data on request
 
 **Implementation**:
+
 ```typescript
 // Mark all test data with flag
 const vehicleData = {
@@ -621,6 +651,7 @@ export function getEnvConfig() {
 ```
 
 **Best Practices**:
+
 - ✅ Use `.env` for local development
 - ✅ Use CI/CD secrets for pipelines
 - ✅ Rotate passwords quarterly
@@ -635,6 +666,7 @@ export function getEnvConfig() {
 ### Purpose
 
 Pre-populate test environment with large datasets for:
+
 - Performance testing
 - UI pagination testing
 - Load testing
@@ -650,34 +682,34 @@ import { DriverFactory } from '../src/utils/factories/DriverFactory';
 
 async function seedData() {
   const odooApi = new OdooJsonRpcClient('http://localhost:8069');
-  
+
   // Authenticate
   await odooApi.authenticate('hora_db', 'admin', 'admin');
-  
+
   console.log('Seeding drivers...');
   const driverIds: number[] = [];
   for (let i = 0; i < 50; i++) {
     const driver = DriverFactory.create();
     const id = await odooApi.create('res.partner', driver);
     driverIds.push(id);
-    
+
     if ((i + 1) % 10 === 0) {
       console.log(`  Created ${i + 1}/50 drivers`);
     }
   }
-  
+
   console.log('Seeding vehicles...');
   for (let i = 0; i < 100; i++) {
     const vehicle = VehicleFactory.create({
-      driver_id: i < 50 ? driverIds[i] : null,  // Assign half to drivers
+      driver_id: i < 50 ? driverIds[i] : null, // Assign half to drivers
     });
     await odooApi.create('fleet.vehicle', vehicle);
-    
+
     if ((i + 1) % 20 === 0) {
       console.log(`  Created ${i + 1}/100 vehicles`);
     }
   }
-  
+
   console.log('✅ Seeding complete!');
   console.log('  - 50 drivers');
   console.log('  - 100 vehicles (50 with drivers, 50 unassigned)');
@@ -692,14 +724,12 @@ seedData().catch(console.error);
 // Optimized bulk insert
 async function seedVehiclesBulk(count: number) {
   const vehicles = VehicleFactory.createBatch(count);
-  
+
   // Batch insert (10 at a time to avoid timeout)
   const batchSize = 10;
   for (let i = 0; i < vehicles.length; i += batchSize) {
     const batch = vehicles.slice(i, i + batchSize);
-    await Promise.all(
-      batch.map(v => odooApi.create('fleet.vehicle', v))
-    );
+    await Promise.all(batch.map((v) => odooApi.create('fleet.vehicle', v)));
     console.log(`Inserted ${Math.min(i + batchSize, vehicles.length)}/${vehicles.length}`);
   }
 }
@@ -769,21 +799,19 @@ for (let i = 0; i < 100; i++) {
 
 // ✅ FAST - Parallel inserts (2 seconds for 100 records)
 const vehicles = VehicleFactory.createBatch(100);
-await Promise.all(
-  vehicles.map(v => odooApi.create('fleet.vehicle', v))
-);
+await Promise.all(vehicles.map((v) => odooApi.create('fleet.vehicle', v)));
 ```
 
 ### Database Indexing
 
 ```sql
 -- Add index on license_plate for faster queries
-CREATE INDEX IF NOT EXISTS idx_vehicle_license_plate 
+CREATE INDEX IF NOT EXISTS idx_vehicle_license_plate
 ON fleet_vehicle (license_plate);
 
 -- Add index on test data flag
-CREATE INDEX IF NOT EXISTS idx_vehicle_test_data 
-ON fleet_vehicle (x_is_test_data) 
+CREATE INDEX IF NOT EXISTS idx_vehicle_test_data
+ON fleet_vehicle (x_is_test_data)
 WHERE x_is_test_data = true;
 ```
 
@@ -797,7 +825,7 @@ const dbPool = new Pool({
   database: 'hora_db',
   user: 'odoo',
   password: 'odoo',
-  max: 10,  // Max 10 connections
+  max: 10, // Max 10 connections
 });
 ```
 
@@ -810,15 +838,17 @@ const dbPool = new Pool({
 **Symptom**: Database full of old test records
 
 **Diagnosis**:
+
 ```sql
-SELECT COUNT(*), DATE(create_date) 
-FROM fleet_vehicle 
+SELECT COUNT(*), DATE(create_date)
+FROM fleet_vehicle
 WHERE license_plate LIKE 'MD-TEST%'
 GROUP BY DATE(create_date)
 ORDER BY DATE(create_date) DESC;
 ```
 
 **Solution**:
+
 ```bash
 # Run cleanup script
 npm run db:clean
@@ -834,14 +864,15 @@ docker exec -it hora-qa-framework-db-1 psql -U odoo -d hora_db -c "DELETE FROM f
 **Symptom**: Cannot delete driver because vehicle references it
 
 **Solution**: Delete in correct order
+
 ```typescript
 // ❌ WRONG ORDER
-await odooApi.unlink('res.partner', driverId);  // Fails: vehicles reference this
+await odooApi.unlink('res.partner', driverId); // Fails: vehicles reference this
 await odooApi.unlink('fleet.vehicle', vehicleId);
 
 // ✅ CORRECT ORDER
-await odooApi.unlink('fleet.vehicle', vehicleId);  // Delete child first
-await odooApi.unlink('res.partner', driverId);     // Then parent
+await odooApi.unlink('fleet.vehicle', vehicleId); // Delete child first
+await odooApi.unlink('res.partner', driverId); // Then parent
 ```
 
 ---
@@ -853,12 +884,13 @@ await odooApi.unlink('res.partner', driverId);     // Then parent
 **Cause**: Hardcoded license plate used in multiple tests
 
 **Solution**:
+
 ```typescript
 // ❌ BAD
 const vehicle = { license_plate: 'TEST-001' };
 
 // ✅ GOOD
-const vehicle = VehicleFactory.create();  // Always unique
+const vehicle = VehicleFactory.create(); // Always unique
 ```
 
 ---
@@ -868,6 +900,7 @@ const vehicle = VehicleFactory.create();  // Always unique
 **Symptom**: Tests spend 80% of time creating data
 
 **Solution**: Create data via API, not UI
+
 ```gherkin
 # ❌ SLOW (30 seconds)
 When I navigate to "vehicles" page
