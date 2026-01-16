@@ -1,9 +1,13 @@
 /**
- * Playwright Configuration
- * 
- * Defines device profiles and test settings for Hora Services QA Framework.
- * Includes custom device definitions for fleet driver tablets and owner-operator devices.
- * 
+ * Playwright Test Runner Configuration (OPTIONAL)
+ *
+ * This repository's PRIMARY runner is Cucumber (`cucumber-js`) and the browser automation
+ * is driven via `playwright` inside Cucumber hooks/steps.
+ *
+ * This file exists only for teams that want to experiment with the Playwright Test runner
+ * (e.g., `npx playwright test`) and device projects. Note: there is no `tests/` folder in
+ * the baseline; unless you add Playwright Test specs, this config is effectively unused.
+ *
  * @see https://playwright.dev/docs/test-configuration
  */
 

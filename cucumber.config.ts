@@ -1,3 +1,12 @@
+/**
+ * Cucumber Configuration (typed mirror)
+ *
+ * Runtime config for `cucumber-js` is `cucumber.js` (CommonJS), which is what the npm scripts
+ * use via `--config cucumber.js`.
+ *
+ * This file is kept as a TypeScript/typed mirror for editor assistance and future refactors.
+ */
+
 import { IConfiguration } from '@cucumber/cucumber/lib/configuration/types';
 
 const config: Partial<IConfiguration> = {

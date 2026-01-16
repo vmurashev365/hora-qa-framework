@@ -56,6 +56,30 @@ This framework automatically validates the Hora Services system:
 
 ## 🚀 Quick Start (Step by Step)
 
+## ⚡ 5-minute Demo
+
+Goal: run a quick smoke suite and open an Allure report.
+
+```bash
+npm install
+npx playwright install chromium
+copy .env.example .env
+
+# Optional (if you want a local Odoo + Postgres to test against)
+npm run docker:start
+
+# Run smoke
+npm run test:smoke
+
+# Generate + open Allure report (with trend history)
+npm run report:allure:trend:open
+```
+
+Notes:
+- Cucumber (`cucumber-js`) is the primary test runner in this repo.
+- Playwright is used as the browser automation engine inside Cucumber steps.
+- The Playwright Test runner (`npx playwright test`) is optional and not used by default.
+
 ### Step 1: Install Required Software
 
 Before you begin, install these programs on your computer:
@@ -134,6 +158,13 @@ You'll see test progress and results:
 
 ## 🧪 Running Tests
 
+### Runner (important)
+
+- **Primary runner:** Cucumber (`cucumber-js`) using config in `cucumber.js`.
+- **Playwright usage:** Steps/hooks use the `playwright` library to drive browsers.
+- **`@playwright/test` usage:** Used for Playwright's `expect` assertions inside Cucumber step definitions.
+- **Playwright Test runner:** Optional only; see `playwright.config.ts`.
+
 ### Common Commands
 
 | What to Test | Command | Duration |
@@ -144,6 +175,25 @@ You'll see test progress and results:
 | Integration tests | `npm run test:integration` | ~5 min |
 | All tests | `npm run test:all` | ~15 min |
 | Tablet tests | `npm run test:tablet` | ~3 min |
+
+### Suites & tags
+
+These suites map directly to `package.json` scripts and Cucumber tag expressions.
+
+| Suite | Primary tags (present in `features/**/*.feature`) | Command |
+|------:|------------------------------|---------|
+| Smoke | `@smoke` (excludes `@api`) | `npm run test:smoke` |
+| API | `@api` | `npm run test:api` |
+| API smoke | `@api-smoke` | `npm run test:api:smoke` |
+| Web UI | `@web` (scoped to `features/web`) | `npm run test:web` |
+| Integration | `@integration` | `npm run test:integration` |
+| Security | `@security` | `npm run test:security` |
+| Accessibility | `@accessibility` | `npm run test:accessibility` |
+| Tablet | `@tablet` (scoped to `features/mobile`) | `npm run test:tablet` |
+| Tablet offline | `@tablet and @offline` | `npm run test:tablet:offline` |
+
+Common secondary tags you can use to slice scenarios:
+- `@critical`, `@quick-check`, `@galaxy-tab`, `@ipad-mini`, `@offline`
 
 ### Running Specific Tests
 
@@ -197,6 +247,67 @@ npm run report:allure:trend:open
 ```
 
 > 💡 The Allure report will open automatically in your browser.
+
+---
+
+## 🤖 CI (GitHub Actions)
+
+The workflow in `.github/workflows/ci.yml` runs:
+- `npm ci`
+- `npm run test:smoke`
+- `npm run report:allure:trend`
+
+Artifacts uploaded per run:
+- `allure-results/` (raw results)
+- `allure-report/` (generated HTML)
+- `allure-history/` (trend history snapshot)
+
+Note on trends: Allure trends require a previous run’s `allure-history`. CI uploads it as an artifact so you can reuse it between runs (or wire a cache/pages flow later).
+
+---
+
+## 🖼️ Visual regression (POC)
+
+This is a minimal visual regression proof-of-concept using Cucumber tag `@visual`.
+
+1) Create/update baselines (local):
+
+**Windows (PowerShell):**
+```powershell
+$env:UPDATE_BASELINE="1"; npm run test:visual
+```
+
+**Mac/Linux:**
+```bash
+UPDATE_BASELINE=1 npm run test:visual
+```
+
+Baselines are stored in `visual/baseline/`.
+
+2) Compare against baselines (default):
+```bash
+npm run test:visual
+```
+
+On mismatch, the run writes debug images to `reports/visual/*.actual.png` and `reports/visual/*.diff.png`.
+
+---
+
+## 🧫 Test Data Strategy (Community Odoo)
+
+This framework targets a **Community Odoo** environment and uses an **environment-driven, strategy-based** approach for test data.
+
+- Tests read credentials/URLs from environment variables (`.env` locally, CI secrets in pipelines).
+- Data setup/cleanup should be **selectable per environment** (local docker vs shared QA vs CI) and **safe by default**.
+- The scripts `npm run db:seed` and `npm run db:clean` are placeholders for the strategy layer; implementation and hardening come in Deliverable 2.
+
+---
+
+## 🔐 Secrets & environment variables
+
+- Store secrets in environment variables (local `.env` file or CI secret store).
+- Do **not** commit `.env` files; use `.env.example` as the template.
+- CI should inject `ODOO_USERNAME`, `ODOO_PASSWORD`, DB credentials, etc. via repository/environment secrets.
 
 ### Error Screenshots
 

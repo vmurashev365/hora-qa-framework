@@ -73,3 +73,6 @@ allure-results/
 allure-report/
 allure-history/
 allure-docker/
+
+# Visual regression outputs (generated)
+reports/visual/
