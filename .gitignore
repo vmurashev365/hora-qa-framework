@@ -71,3 +71,8 @@ reports/cucumber/*.html
 # Allure reports
 allure-results/
 allure-report/
+allure-history/categories-trend.json
+allure-history/duration-trend.json
+allure-history/history-trend.json
+allure-history/history.json
+allure-history/retry-trend.json
