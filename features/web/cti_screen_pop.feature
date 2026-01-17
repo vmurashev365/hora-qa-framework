@@ -1,4 +1,4 @@
-@web @integration @new @module_cti
+@web @integration @module_cti
 Feature: CTI Screen Pop
   As a dispatcher
   I want incoming calls to screen-pop driver details
