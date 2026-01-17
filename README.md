@@ -202,9 +202,8 @@ Common secondary tags you can use to slice scenarios:
 
 - `@critical`, `@quick-check`, `@galaxy-tab`, `@ipad-mini`, `@offline`
 
-New module tags (added for isolated execution of newly introduced scenarios):
+Module tags (use these to run specific functional areas):
 
-- `@new` (all new scenarios added in recent work)
 - `@module_finance` (Financial Compliance)
 - `@module_offline_sync` (Offline Sync)
 - `@module_cti` (CTI Screen Pop)
@@ -482,10 +481,9 @@ Feature: Vehicle Management
 | `npm run test:accessibility` | Run accessibility tests |
 | `npm run test:all` | Run full regression suite (parallel) |
 | `npm run test:nightly` | Run smoke + API + integration |
-| `npm run test:new` | Run only newly added scenarios |
-| `npm run test:new:finance` | Run only new finance scenarios |
-| `npm run test:new:offline` | Run only new offline sync scenarios |
-| `npm run test:new:cti` | Run only new CTI scenarios |
+| `npm run test:module:finance` | Run finance compliance scenarios |
+| `npm run test:module:offline` | Run offline sync scenarios |
+| `npm run test:module:cti` | Run CTI screen pop scenarios |
 
 ### Performance Testing
 
