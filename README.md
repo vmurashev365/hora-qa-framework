@@ -13,7 +13,9 @@ Automated testing framework for the Hora Services fleet management system built 
 
 ## ✨ Highlights
 
-- 🏗 **3-Layer BDD Architecture** - Atomic → Domain → Composite steps for maximum reusability (see docs/BDD_ARCHITECTURE.md)
+- 🏗 **3-Layer BDD Architecture** -
+  Atomic → Domain → Composite steps for maximum reusability (see
+  [docs/BDD_ARCHITECTURE.md](docs/BDD_ARCHITECTURE.md))
 - 🗺 **UI-MAP Pattern** - Decoupled selectors for maintainability and resilience
 - 🔄 **Full-Stack Testing** - Web UI, REST/JSON-RPC APIs, Database, Integration tests
 - 📱 **Mobile-Ready** - Appium architecture for Android/iOS driver app testing
@@ -35,7 +37,7 @@ Automated testing framework for the Hora Services fleet management system built 
 - [Project Structure](#-project-structure)
 - [Writing Tests](#-writing-tests)
 - [Troubleshooting](#-troubleshooting)
-- [Command Reference](#-command-reference)
+- [Command Reference](#-command-reference-complete-list)
 
 ---
 
@@ -50,7 +52,8 @@ This framework automatically validates the Hora Services system:
 - ✅ **Performance** — validates system speed under load
 - ✅ **Tablet Devices** — testing on Galaxy Tab and iPad
 
-**Key Benefit:** Tests are written in plain English (Gherkin language), so business users can read and even write tests without programming knowledge!
+**Key Benefit:** Tests are written in plain English (Gherkin language), so business users can read
+and even write tests without programming knowledge!
 
 ---
 
@@ -76,6 +79,7 @@ npm run report:allure:trend:open
 ```
 
 Notes:
+
 - Cucumber (`cucumber-js`) is the primary test runner in this repo.
 - Playwright is used as the browser automation engine inside Cucumber steps.
 - The Playwright Test runner (`npx playwright test`) is optional and not used by default.
@@ -85,7 +89,7 @@ Notes:
 Before you begin, install these programs on your computer:
 
 | Program | Why You Need It | How to Install |
-|---------|-----------------|----------------|
+| ------- | --------------- | -------------- |
 | **Node.js 20+** | Runs the test framework | [Download from nodejs.org](https://nodejs.org/) — choose the LTS version |
 | **Docker Desktop** | Runs the Odoo test environment | [Download from docker.com](https://www.docker.com/products/docker-desktop/) |
 | **Git** | Downloads the project code | [Download from git-scm.com](https://git-scm.com/) |
@@ -137,7 +141,8 @@ npm run docker:start
 **Wait for startup!** The first time, Odoo initialization may take **1-2 minutes**.
 
 Verify it's ready:
-1. Open your browser and go to http://localhost:8069
+
+1. Open your browser and go to <http://localhost:8069>
 2. You should see the Odoo login page
 3. Username: `admin`, Password: `admin`
 
@@ -151,6 +156,7 @@ npm run test:smoke
 ```
 
 You'll see test progress and results:
+
 - ✅ **Passed** — test completed successfully
 - ❌ **Failed** — test found an issue
 
@@ -168,7 +174,7 @@ You'll see test progress and results:
 ### Common Commands
 
 | What to Test | Command | Duration |
-|--------------|---------|----------|
+| --- | --- | --- |
 | Quick check (smoke) | `npm run test:smoke` | ~2 min |
 | API only | `npm run test:api` | ~3 min |
 | Web UI only | `npm run test:web` | ~5 min |
@@ -181,7 +187,7 @@ You'll see test progress and results:
 These suites map directly to `package.json` scripts and Cucumber tag expressions.
 
 | Suite | Primary tags (present in `features/**/*.feature`) | Command |
-|------:|------------------------------|---------|
+| --- | --- | --- |
 | Smoke | `@smoke` (excludes `@api`) | `npm run test:smoke` |
 | API | `@api` | `npm run test:api` |
 | API smoke | `@api-smoke` | `npm run test:api:smoke` |
@@ -193,7 +199,15 @@ These suites map directly to `package.json` scripts and Cucumber tag expressions
 | Tablet offline | `@tablet and @offline` | `npm run test:tablet:offline` |
 
 Common secondary tags you can use to slice scenarios:
+
 - `@critical`, `@quick-check`, `@galaxy-tab`, `@ipad-mini`, `@offline`
+
+New module tags (added for isolated execution of newly introduced scenarios):
+
+- `@new` (all new scenarios added in recent work)
+- `@module_finance` (Financial Compliance)
+- `@module_offline_sync` (Offline Sync)
+- `@module_cti` (CTI Screen Pop)
 
 ### Running Specific Tests
 
@@ -212,11 +226,13 @@ npx cucumber-js --tags "@tablet"
 By default, tests run in background mode (headless). To see what's happening:
 
 **Windows (PowerShell):**
+
 ```powershell
 $env:HEADLESS="false"; npm run test:smoke
 ```
 
 **Mac/Linux:**
+
 ```bash
 HEADLESS=false npm run test:smoke
 ```
@@ -253,16 +269,19 @@ npm run report:allure:trend:open
 ## 🤖 CI (GitHub Actions)
 
 The workflow in `.github/workflows/ci.yml` runs:
+
 - `npm ci`
 - `npm run test:smoke`
 - `npm run report:allure:trend`
 
 Artifacts uploaded per run:
+
 - `allure-results/` (raw results)
 - `allure-report/` (generated HTML)
 - `allure-history/` (trend history snapshot)
 
-Note on trends: Allure trends require a previous run’s `allure-history`. CI uploads it as an artifact so you can reuse it between runs (or wire a cache/pages flow later).
+Note on trends: Allure trends require a previous run’s `allure-history`.
+CI uploads it as an artifact so you can reuse it between runs (or wire a cache/pages flow later).
 
 ---
 
@@ -270,21 +289,24 @@ Note on trends: Allure trends require a previous run’s `allure-history`. CI up
 
 This is a minimal visual regression proof-of-concept using Cucumber tag `@visual`.
 
-1) Create/update baselines (local):
+1. Create/update baselines (local):
 
 **Windows (PowerShell):**
+
 ```powershell
 $env:UPDATE_BASELINE="1"; npm run test:visual
 ```
 
 **Mac/Linux:**
+
 ```bash
 UPDATE_BASELINE=1 npm run test:visual
 ```
 
 Baselines are stored in `visual/baseline/`.
 
-2) Compare against baselines (default):
+1. Compare against baselines (default):
+
 ```bash
 npm run test:visual
 ```
@@ -295,11 +317,14 @@ On mismatch, the run writes debug images to `reports/visual/*.actual.png` and `r
 
 ## 🧫 Test Data Strategy (Community Odoo)
 
-This framework targets a **Community Odoo** environment and uses an **environment-driven, strategy-based** approach for test data.
+This framework targets a **Community Odoo** environment and uses an
+**environment-driven, strategy-based** approach for test data.
 
 - Tests read credentials/URLs from environment variables (`.env` locally, CI secrets in pipelines).
-- Data setup/cleanup should be **selectable per environment** (local docker vs shared QA vs CI) and **safe by default**.
-- The scripts `npm run db:seed` and `npm run db:clean` are placeholders for the strategy layer; implementation and hardening come in Deliverable 2.
+- Data setup/cleanup should be **selectable per environment** (local docker vs shared QA vs CI)
+  and **safe by default**.
+- The scripts `npm run db:seed` and `npm run db:clean` are placeholders for the strategy layer;
+  implementation and hardening come in Deliverable 2.
 
 ---
 
@@ -312,7 +337,8 @@ This framework targets a **Community Odoo** environment and uses an **environmen
 ### Error Screenshots
 
 When a test fails, a screenshot is automatically saved in the folder:
-```
+
+```text
 reports/screenshots/
 ```
 
@@ -324,7 +350,7 @@ This makes debugging much easier — you can see exactly what the screen looked 
 
 Here's a simplified view of the key folders:
 
-```
+```text
 hora-qa-framework/
 ├── features/                  # 📝 Test files (Gherkin language)
 │   ├── smoke.feature         #    Quick sanity checks
@@ -374,7 +400,7 @@ hora-qa-framework/
 ## 📚 Documentation for Different Roles
 
 | Document | Who It's For | What's Inside |
-|----------|--------------|---------------|
+| --- | --- | --- |
 | **[STEP_LIBRARY.md](docs/STEP_LIBRARY.md)** | Product Owners, Business Analysts | List of all available test steps — write tests without coding! |
 | **[RUNBOOK.md](docs/RUNBOOK.md)** | Anyone | Troubleshooting guide and common fixes |
 | **[BDD_ARCHITECTURE.md](docs/BDD_ARCHITECTURE.md)** | QA Engineers, Developers | 3-Layer BDD architecture (Atomic → Domain → Composite) |
@@ -407,7 +433,7 @@ Feature: Vehicle Management
 ### Understanding the Format
 
 | Part | What It Means |
-|------|---------------|
+| --- | --- |
 | `@smoke` | Tag for grouping (you can run all @smoke tests together) |
 | `Feature:` | The area being tested |
 | `Scenario:` | One specific test case |
@@ -418,15 +444,18 @@ Feature: Vehicle Management
 ### Common Test Steps (Quick Reference)
 
 **Navigation:**
+
 - `Given Odoo is accessible at "http://localhost:8069"` — verify system is up
 - `When I navigate to "Vehicles" page` — go to a page
 - `When I click "Create" button` — click a button
 
 **Filling Forms:**
+
 - `When I fill "Name" with "John Doe"` — enter text
 - `When I select "Truck" from "Type" dropdown` — select from dropdown
 
 **Checking Results:**
+
 - `Then I should see "Success" text` — verify text is visible
 - `Then I should see "Save" button` — verify button exists
 
@@ -438,28 +467,32 @@ Feature: Vehicle Management
 
 ### Test Execution
 
-| Command                    | Description                          |
-| -------------------------- | ------------------------------------ |
-| `npm run test:smoke`       | Run smoke tests (quick validation)   |
-| `npm run test:api`         | Run API tests only                   |
-| `npm run test:api:smoke`   | Run API smoke tests                  |
-| `npm run test:web`         | Run web UI tests                     |
-| `npm run test:integration` | Run integration tests                |
-| `npm run test:security`    | Run security tests                   |
-| `npm run test:tablet`      | Run all tablet tests                 |
-| `npm run test:tablet:galaxy` | Run Galaxy Tab specific tests      |
-| `npm run test:tablet:ipad` | Run iPad Mini specific tests         |
-| `npm run test:tablet:offline` | Run tablet offline sync tests     |
-| `npm run test:accessibility` | Run accessibility tests            |
-| `npm run test:all`         | Run full regression suite (parallel) |
-| `npm run test:nightly`     | Run smoke + API + integration        |
+| Command | Description |
+| --- | --- |
+| `npm run test:smoke` | Run smoke tests (quick validation) |
+| `npm run test:api` | Run API tests only |
+| `npm run test:api:smoke` | Run API smoke tests |
+| `npm run test:web` | Run web UI tests |
+| `npm run test:integration` | Run integration tests |
+| `npm run test:security` | Run security tests |
+| `npm run test:tablet` | Run all tablet tests |
+| `npm run test:tablet:galaxy` | Run Galaxy Tab specific tests |
+| `npm run test:tablet:ipad` | Run iPad Mini specific tests |
+| `npm run test:tablet:offline` | Run tablet offline sync tests |
+| `npm run test:accessibility` | Run accessibility tests |
+| `npm run test:all` | Run full regression suite (parallel) |
+| `npm run test:nightly` | Run smoke + API + integration |
+| `npm run test:new` | Run only newly added scenarios |
+| `npm run test:new:finance` | Run only new finance scenarios |
+| `npm run test:new:offline` | Run only new offline sync scenarios |
+| `npm run test:new:cti` | Run only new CTI scenarios |
 
 ### Performance Testing
 
-| Command                 | Description                           |
-| ----------------------- | ------------------------------------- |
-| `npm run perf:k6:smoke` | Run k6 smoke test (1 min, 10 VUs)     |
-| `npm run perf:k6:load`  | Run k6 load test (9 min, staged load) |
+| Command | Description |
+| --- | --- |
+| `npm run perf:k6:smoke` | Run k6 smoke test (1 min, 10 VUs) |
+| `npm run perf:k6:load` | Run k6 load test (9 min, staged load) |
 
 ### Reporting
 
@@ -554,6 +587,22 @@ docker-compose down -v
 | `LOG_LEVEL`             | `info`                  | Log level (`debug`/`info`/`warn`/`error`)    |
 | `VERBOSE`               | `false`                 | Enable verbose logging                       |
 
+### ENV Contract (Integration Modules)
+
+These environment variables are required by the integration modules added under `features/api`, `features/mobile`, and `features/web`.
+
+| Variable | Required By | Notes |
+| --- | --- | --- |
+| `API_BASE_URL` | Financial Compliance, Offline Sync | Base URL for REST services under test |
+| `API_AUTH_TOKEN` | Financial Compliance, Offline Sync | Bearer token value (without the `Bearer` prefix) |
+| `FINANCE_SALARY_ENDPOINT` | Financial Compliance | Salary endpoint path or absolute URL |
+| `FINANCE_IFTA_ENDPOINT` | Financial Compliance | IFTA endpoint path or absolute URL |
+| `LOAD_STATUS_ENDPOINT` | Offline Sync | Polling endpoint for sync status (path or absolute URL) |
+| `ODOO_BASE_URL` | Offline Sync, CTI Screen Pop | Odoo web base URL for UI login |
+| `ODOO_USER` | Offline Sync, CTI Screen Pop | Odoo UI username |
+| `ODOO_PASS` | Offline Sync, CTI Screen Pop | Odoo UI password |
+| `CTI_WS_PATTERN` | CTI Screen Pop | WebSocket URL match pattern used by `page.routeWebSocket()` (supports `*` wildcards or `/regex/flags`) |
+
 ### Running in Headed Mode (Debug)
 
 ```bash
@@ -632,7 +681,7 @@ npx cucumber-js --tags "@smoke and not @skip"
 ### ❌ "Odoo not accessible" or page won't load
 
 | Try This | How |
-|----------|-----|
+| --- | --- |
 | 1. Check Docker is running | Look for the whale icon in your system tray |
 | 2. Check containers are up | Run `docker-compose ps` — you should see "Up" status |
 | 3. Wait longer | First startup can take 1-2 minutes |
@@ -642,7 +691,7 @@ npx cucumber-js --tags "@smoke and not @skip"
 ### ❌ Tests failing — "element not found"
 
 | Try This | How |
-|----------|-----|
+| --- | --- |
 | 1. Run with visible browser | Use `$env:HEADLESS="false"; npm run test:smoke` |
 | 2. Check element exists | Look at the page — is the button/field actually there? |
 | 3. Update selectors | UI may have changed — run `npx playwright codegen http://localhost:8069` |
@@ -650,6 +699,7 @@ npx cucumber-js --tags "@smoke and not @skip"
 ### ❌ "npm command not found"
 
 Node.js may not be installed correctly:
+
 1. Download from [nodejs.org](https://nodejs.org/)
 2. Close and reopen PowerShell
 3. Test with `node --version` — should show a version number
@@ -661,6 +711,7 @@ npm run type-check
 ```
 
 If you see errors, try:
+
 ```bash
 npm install
 npm run build
@@ -673,7 +724,7 @@ npm run build
 Reports are automatically generated when you run tests:
 
 | Report Type | Location | How to View |
-|-------------|----------|-------------|
+| --- | --- | --- |
 | **Cucumber HTML** | `reports/cucumber/index.html` | Open file in browser |
 | **Error screenshots** | `reports/screenshots/` | Open images to see failures |
 | **Allure Report** | `allure-report/` | Run `npm run report:allure:open` |
@@ -689,6 +740,7 @@ npm run report:allure:trend:open
 ```
 
 The Allure report will open in your browser showing:
+
 - Pass/fail summary
 - Trend charts (if you have history)
 - Detailed step-by-step execution
@@ -701,7 +753,7 @@ The Allure report will open in your browser showing:
 Use tags to run specific groups of tests:
 
 | Tag | What It Runs | Command |
-|-----|--------------|---------|
+| --- | --- | --- |
 | `@smoke` | Quick sanity checks | `npx cucumber-js --tags "@smoke"` |
 | `@critical` | Business-critical paths | `npx cucumber-js --tags "@critical"` |
 | `@api` | API tests only | `npx cucumber-js --tags "@api"` |
@@ -709,6 +761,7 @@ Use tags to run specific groups of tests:
 | `@skip` | (Skips the test) | — |
 
 **Combining tags:**
+
 ```bash
 # Run smoke tests except skipped ones
 npx cucumber-js --tags "@smoke and not @skip"
@@ -719,10 +772,10 @@ npx cucumber-js --tags "@critical or @smoke"
 
 ---
 
-## 📞 Need Help?
+## 📞 Need Help
 
 | Question | Where to Look |
-|----------|---------------|
+| --- | --- |
 | "What steps can I use?" | [STEP_LIBRARY.md](docs/STEP_LIBRARY.md) |
 | "Something's broken!" | [RUNBOOK.md](docs/RUNBOOK.md) or Troubleshooting section above |
 | "I found a bug" | Open an issue in the GitHub repository |
@@ -730,9 +783,10 @@ npx cucumber-js --tags "@critical or @smoke"
 
 ---
 
-## 🎉 Happy Testing!
+## 🎉 Happy Testing
 
 Remember:
+
 - Start with `npm run test:smoke` to verify everything works
 - Use visible browser mode (`HEADLESS=false`) when debugging
 - Check the [STEP_LIBRARY.md](docs/STEP_LIBRARY.md) for all available test steps

@@ -491,17 +491,16 @@ When(
 Given(
   'the network is {string}',
   async function (this: CustomWorld, networkType: string) {
-    const normalizedType = networkType.toUpperCase() as NetworkCondition;
-    
-    if (!['4G', '3G', 'OFFLINE'].includes(normalizedType)) {
+    const normalized = networkType.trim().toLowerCase();
+    const condition: NetworkCondition =
+      normalized === 'offline' ? 'offline' : normalized === '4g' ? '4G' : normalized === '3g' ? '3G' : ('' as never);
+
+    if (condition !== 'offline' && condition !== '4G' && condition !== '3G') {
       throw new Error(`Invalid network type: ${networkType}. Use '4G', '3G', or 'offline'`);
     }
 
-    await simulateNetworkCondition(
-      this.page,
-      normalizedType.toLowerCase() as NetworkCondition
-    );
-    this.setTestData('networkCondition', normalizedType);
+    await simulateNetworkCondition(this.page, condition);
+    this.setTestData('networkCondition', condition);
   }
 );
 
@@ -515,22 +514,32 @@ Given(
 When(
   'the network changes to {string}',
   async function (this: CustomWorld, networkType: string) {
-    await simulateNetworkCondition(
-      this.page,
-      networkType.toLowerCase() as NetworkCondition
-    );
-    this.setTestData('networkCondition', networkType.toUpperCase());
+    const normalized = networkType.trim().toLowerCase();
+    const condition: NetworkCondition =
+      normalized === 'offline' ? 'offline' : normalized === '4g' ? '4G' : normalized === '3g' ? '3G' : ('' as never);
+
+    if (condition !== 'offline' && condition !== '4G' && condition !== '3G') {
+      throw new Error(`Invalid network type: ${networkType}. Use '4G', '3G', or 'offline'`);
+    }
+
+    await simulateNetworkCondition(this.page, condition);
+    this.setTestData('networkCondition', condition);
   }
 );
 
 When(
   'the network drops to {string}',
   async function (this: CustomWorld, networkType: string) {
-    await simulateNetworkCondition(
-      this.page,
-      networkType.toLowerCase() as NetworkCondition
-    );
-    this.setTestData('networkCondition', networkType.toUpperCase());
+    const normalized = networkType.trim().toLowerCase();
+    const condition: NetworkCondition =
+      normalized === 'offline' ? 'offline' : normalized === '4g' ? '4G' : normalized === '3g' ? '3G' : ('' as never);
+
+    if (condition !== 'offline' && condition !== '4G' && condition !== '3G') {
+      throw new Error(`Invalid network type: ${networkType}. Use '4G', '3G', or 'offline'`);
+    }
+
+    await simulateNetworkCondition(this.page, condition);
+    this.setTestData('networkCondition', condition);
   }
 );
 
