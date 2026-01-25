@@ -41,8 +41,8 @@ export interface FuelLog {
   vehicleId: number;
   date: IsoDateString;
   gallons: number;
-  pricePerGallon: number;
-  totalCost: number;
+  pricePerGallonCents: number;
+  totalCostCents: number;
   odometer?: number;
 }
 
@@ -52,7 +52,7 @@ export interface FuelLog {
 export interface CreateFuelLogInput {
   vehicleId: number;
   gallons: number;
-  pricePerGallon: number;
+  pricePerGallonCents: number;
   date?: IsoDateString;
   odometer?: number;
 }
@@ -81,4 +81,17 @@ export interface ServiceActivity {
   serviceType: string;
   cost: number;
   notes?: string;
+}
+
+import type { FleetVehicleModel } from '../api/models/fleet/FleetVehicleModel';
+import type { FleetFuelLogModel } from '../api/models/fleet/FleetFuelLogModel';
+import type { FleetInspectionModel } from '../api/models/fleet/FleetInspectionModel';
+import type { FleetServiceModel } from '../api/models/fleet/FleetServiceModel';
+
+/** Lazy-initialized Fleet model bundle exposed on CustomWorld. */
+export interface FleetModels {
+  vehicle: FleetVehicleModel;
+  fuel: FleetFuelLogModel;
+  inspection: FleetInspectionModel;
+  service: FleetServiceModel;
 }

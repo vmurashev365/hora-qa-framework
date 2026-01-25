@@ -8,10 +8,9 @@
 import { Given, When, Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
 import type { CustomWorld } from '../../support/custom-world';
-import { FleetVehicleModel } from '../../api/models/fleet/FleetVehicleModel';
-import { FleetFuelLogModel } from '../../api/models/fleet/FleetFuelLogModel';
-import { FleetInspectionModel } from '../../api/models/fleet/FleetInspectionModel';
 import type { FuelLog, FleetVehicle, InspectionLog, InspectionResult } from '../../types/fleet';
+import { toCents } from '../../helpers/money';
+import { withRunSuffix } from '../../helpers/test-run';
 
 const TESTDATA_KEYS = {
   vehicle: 'fleet:vehicle',
@@ -27,12 +26,12 @@ function parseInspectionResult(value: string): InspectionResult {
 }
 
 Given('a fleet vehicle {string} exists', { timeout: 30000 }, async function (this: CustomWorld, name: string) {
-  const vehicles = new FleetVehicleModel(this.odooApi);
+  const resolvedName = withRunSuffix(name);
 
-  const vehicle = await vehicles.ensureExists({
-    name,
+  const vehicle = await this.fleet.vehicle.ensureExists({
+    name: resolvedName,
     // Provide a deterministic plate so repeated runs are stable.
-    licensePlate: name.toUpperCase().replace(/\s+/g, '-'),
+    licensePlate: resolvedName.toUpperCase().replace(/\s+/g, '-'),
     odometer: 0,
     odometerUnit: 'miles',
     active: true,
@@ -45,15 +44,16 @@ When(
   'I log fuel of {int} gallons at price {float} for truck {string}',
   { timeout: 30000 },
   async function (this: CustomWorld, gallons: number, pricePerGallon: number, vehicleName: string) {
-    const vehicles = new FleetVehicleModel(this.odooApi);
-    const fuelLogs = new FleetFuelLogModel(this.odooApi);
+    const resolvedVehicleName = withRunSuffix(vehicleName);
 
-    const vehicle = this.getTestData<FleetVehicle>(TESTDATA_KEYS.vehicle) ?? (await vehicles.getByName(vehicleName));
+    const vehicle =
+      this.getTestData<FleetVehicle>(TESTDATA_KEYS.vehicle) ??
+      (await this.fleet.vehicle.getByName(resolvedVehicleName));
 
-    const fuelLog = await fuelLogs.createFuelLog({
+    const fuelLog = await this.fleet.fuel.createFuelLog({
       vehicleId: vehicle.id,
       gallons,
-      pricePerGallon,
+      pricePerGallonCents: toCents(pricePerGallon),
     });
 
     this.setTestData<FuelLog>(TESTDATA_KEYS.fuelLog, fuelLog);
@@ -64,10 +64,12 @@ When(
   'I update odometer of truck {string} to {int} miles',
   { timeout: 30000 },
   async function (this: CustomWorld, vehicleName: string, miles: number) {
-    const vehicles = new FleetVehicleModel(this.odooApi);
-    const vehicle = this.getTestData<FleetVehicle>(TESTDATA_KEYS.vehicle) ?? (await vehicles.getByName(vehicleName));
+    const resolvedVehicleName = withRunSuffix(vehicleName);
+    const vehicle =
+      this.getTestData<FleetVehicle>(TESTDATA_KEYS.vehicle) ??
+      (await this.fleet.vehicle.getByName(resolvedVehicleName));
 
-    await vehicles.updateOdometer(vehicle.id, miles);
+    await this.fleet.vehicle.updateOdometer(vehicle.id, miles);
 
     // Update cached vehicle snapshot for later assertions if needed.
     this.setTestData<FleetVehicle>(TESTDATA_KEYS.vehicle, { ...vehicle, odometer: miles, odometerUnit: 'miles' });
@@ -78,24 +80,25 @@ Then(
   'the fuel log should be stored correctly for truck {string}',
   { timeout: 30000 },
   async function (this: CustomWorld, vehicleName: string) {
-    const vehicles = new FleetVehicleModel(this.odooApi);
-    const fuelLogs = new FleetFuelLogModel(this.odooApi);
+    const resolvedVehicleName = withRunSuffix(vehicleName);
 
-    const vehicle = this.getTestData<FleetVehicle>(TESTDATA_KEYS.vehicle) ?? (await vehicles.getByName(vehicleName));
+    const vehicle =
+      this.getTestData<FleetVehicle>(TESTDATA_KEYS.vehicle) ??
+      (await this.fleet.vehicle.getByName(resolvedVehicleName));
     const created = this.getTestData<FuelLog>(TESTDATA_KEYS.fuelLog);
 
     expect(created, 'Expected a fuel log to be created during scenario').toBeTruthy();
     if (!created) return;
 
-    const latest = await fuelLogs.getLatestForVehicle(vehicle.id);
+    const latest = await this.fleet.fuel.getLatestForVehicle(vehicle.id);
 
     expect(latest.vehicleId).toBe(vehicle.id);
     expect(latest.id).toBe(created.id);
 
     // Values are subject to liter<->gallon conversion; assert with tolerance.
     expect(latest.gallons).toBeCloseTo(created.gallons, 3);
-    expect(latest.pricePerGallon).toBeCloseTo(created.pricePerGallon, 3);
-    expect(latest.totalCost).toBeCloseTo(created.totalCost, 2);
+    expect(Math.abs(latest.pricePerGallonCents - created.pricePerGallonCents)).toBeLessThanOrEqual(1);
+    expect(Math.abs(latest.totalCostCents - created.totalCostCents)).toBeLessThanOrEqual(1);
   }
 );
 
@@ -103,13 +106,14 @@ When(
   'I record a {string} inspection for truck {string}',
   { timeout: 30000 },
   async function (this: CustomWorld, resultRaw: string, vehicleName: string) {
-    const vehicles = new FleetVehicleModel(this.odooApi);
-    const inspections = new FleetInspectionModel(this.odooApi);
+    const resolvedVehicleName = withRunSuffix(vehicleName);
 
-    const vehicle = this.getTestData<FleetVehicle>(TESTDATA_KEYS.vehicle) ?? (await vehicles.getByName(vehicleName));
+    const vehicle =
+      this.getTestData<FleetVehicle>(TESTDATA_KEYS.vehicle) ??
+      (await this.fleet.vehicle.getByName(resolvedVehicleName));
     const result = parseInspectionResult(resultRaw);
 
-    const inspection = await inspections.createInspection(vehicle.id, result);
+    const inspection = await this.fleet.inspection.createInspection(vehicle.id, result);
     this.setTestData<InspectionLog>(TESTDATA_KEYS.inspectionLog, inspection);
   }
 );
@@ -118,7 +122,6 @@ Then(
   'inspection should be visible in fleet records',
   { timeout: 30000 },
   async function (this: CustomWorld) {
-    const inspections = new FleetInspectionModel(this.odooApi);
     const vehicle = this.getTestData<FleetVehicle>(TESTDATA_KEYS.vehicle);
     const created = this.getTestData<InspectionLog>(TESTDATA_KEYS.inspectionLog);
 
@@ -127,7 +130,7 @@ Then(
 
     if (!vehicle || !created) return;
 
-    const latest = await inspections.getLatestForVehicle(vehicle.id);
+    const latest = await this.fleet.inspection.getLatestForVehicle(vehicle.id);
     expect(latest.id).toBe(created.id);
     expect(latest.vehicleId).toBe(vehicle.id);
     expect(latest.inspectionResult).toBe(created.inspectionResult);

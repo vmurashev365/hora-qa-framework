@@ -8,6 +8,7 @@
 import { OdooJsonRpcClient } from '../../clients/OdooJsonRpcClient';
 import { OdooApiError } from '../../clients/OdooJsonRpcClient';
 import type { CreateFuelLogInput, FuelLog, IsoDateString } from '../../../types/fleet';
+import { dollarsToCents, mulToCents } from '../../../helpers/money';
 
 interface OdooFuelLogRecord {
   id: number;
@@ -68,24 +69,28 @@ export class FleetFuelLogModel {
     if (input.gallons <= 0) {
       throw new Error(`FleetFuelLogModel.createFuelLog: gallons must be > 0 (got ${input.gallons})`);
     }
-    if (input.pricePerGallon <= 0) {
-      throw new Error(`FleetFuelLogModel.createFuelLog: pricePerGallon must be > 0 (got ${input.pricePerGallon})`);
+    if (!Number.isInteger(input.pricePerGallonCents) || input.pricePerGallonCents <= 0) {
+      throw new Error(
+        `FleetFuelLogModel.createFuelLog: pricePerGallonCents must be an integer > 0 (got ${String(input.pricePerGallonCents)})`
+      );
     }
 
     const date = input.date ?? FleetFuelLogModel.todayIsoDate();
 
-    const amount = FleetFuelLogModel.roundCurrency(input.gallons * input.pricePerGallon);
+    const amountCents = mulToCents(input.gallons, input.pricePerGallonCents);
+    const amountDollars = amountCents / 100;
 
     if (this.backend === 'fuel') {
       const liters = FleetFuelLogModel.gallonsToLiters(input.gallons);
-      const pricePerLiter = FleetFuelLogModel.pricePerGallonToPerLiter(input.pricePerGallon);
+      const pricePerGallonDollars = input.pricePerGallonCents / 100;
+      const pricePerLiter = FleetFuelLogModel.pricePerGallonToPerLiter(pricePerGallonDollars);
 
       const createdId = await this.client.create(this.fuelLogModelName, {
         vehicle_id: input.vehicleId,
         date,
         liter: liters,
         price_per_liter: pricePerLiter,
-        amount,
+        amount: amountDollars,
         ...(typeof input.odometer === 'number' ? { odometer: input.odometer } : {}),
       });
 
@@ -103,7 +108,7 @@ export class FleetFuelLogModel {
     }
 
     // Odoo Community fallback: store fuel event as a service log entry.
-    const description = FleetFuelLogModel.formatFallbackDescription(input.gallons, input.pricePerGallon);
+    const description = FleetFuelLogModel.formatFallbackDescription(input.gallons, input.pricePerGallonCents / 100);
 
     const fields = await this.getFallbackServiceFields();
     const payload: Record<string, unknown> = {
@@ -118,9 +123,9 @@ export class FleetFuelLogModel {
 
     // Cost field name varies across modules; prefer amount/cost_amount if present.
     if (fields.has('amount')) {
-      payload.amount = amount;
+      payload.amount = amountDollars;
     } else if (fields.has('cost_amount')) {
-      payload.cost_amount = amount;
+      payload.cost_amount = amountDollars;
     }
 
     if (typeof input.odometer === 'number' && fields.has('odometer')) {
@@ -144,15 +149,17 @@ export class FleetFuelLogModel {
     const parsed = FleetFuelLogModel.parseFallbackDescription(records[0].description);
     const vehicleId = FleetFuelLogModel.many2OneId(records[0].vehicle_id);
     const storedAmount = records[0].amount ?? records[0].cost_amount;
-    const totalCost = FleetFuelLogModel.roundCurrency(storedAmount ?? amount);
+    const storedAmountCents = typeof storedAmount === 'number' ? dollarsToCents(storedAmount) : undefined;
+    const pricePerGallonCents = dollarsToCents(parsed.pricePerGallon);
+    const totalCostCents = storedAmountCents ?? amountCents;
 
     return {
       id: records[0].id,
       vehicleId,
       date: FleetFuelLogModel.ensureIsoDate(records[0].date),
       gallons: parsed.gallons,
-      pricePerGallon: parsed.pricePerGallon,
-      totalCost,
+      pricePerGallonCents,
+      totalCostCents,
       odometer: records[0].odometer,
     };
   }
@@ -194,17 +201,23 @@ export class FleetFuelLogModel {
     }
 
     const parsed = FleetFuelLogModel.parseFallbackDescription(records[0].description);
+
+    const pricePerGallonCents = dollarsToCents(parsed.pricePerGallon);
+    const recordAmount = (records[0] as { amount?: number; cost_amount?: number }).amount ??
+      (records[0] as { amount?: number; cost_amount?: number }).cost_amount;
+
+    const totalCostCents =
+      typeof recordAmount === 'number'
+        ? dollarsToCents(recordAmount)
+        : mulToCents(parsed.gallons, pricePerGallonCents);
+
     return {
       id: records[0].id,
       vehicleId: FleetFuelLogModel.many2OneId(records[0].vehicle_id),
       date: FleetFuelLogModel.ensureIsoDate(records[0].date),
       gallons: parsed.gallons,
-      pricePerGallon: parsed.pricePerGallon,
-      totalCost: FleetFuelLogModel.roundCurrency(
-        (records[0] as { amount?: number; cost_amount?: number }).amount ??
-          (records[0] as { amount?: number; cost_amount?: number }).cost_amount ??
-          parsed.gallons * parsed.pricePerGallon
-      ),
+      pricePerGallonCents,
+      totalCostCents,
       odometer: records[0].odometer,
     };
   }
@@ -314,20 +327,42 @@ export class FleetFuelLogModel {
     }
   }
 
-  private static isMissingModelError(error: unknown, modelName: string): boolean {
-    const haystack = FleetFuelLogModel.stringifyError(error);
-    if (haystack.includes(modelName)) {
-      return true;
-    }
-    if (error instanceof OdooApiError) {
-      const msg = error.data?.message ?? '';
-      if (msg.includes(modelName)) {
-        return true;
-      }
-      return msg.includes('Unknown') || msg.includes('unknown');
-    }
+private static isMissingModelError(error: unknown, modelName: string): boolean {
+  const haystack = FleetFuelLogModel.stringifyError(error).toLowerCase();
+
+  // Never treat auth/access/permission failures as a missing-model signal.
+  if (
+    haystack.includes('accesserror') ||
+    haystack.includes('access denied') ||
+    haystack.includes('permission') ||
+    haystack.includes('not allowed') ||
+    haystack.includes('authentication') ||
+    haystack.includes('not authenticated')
+  ) {
     return false;
   }
+
+  if (error instanceof OdooApiError) {
+    const exceptionType = error.getExceptionType();
+    if (exceptionType === 'AccessError' || exceptionType === 'AuthenticationError') {
+      return false;
+    }
+  }
+
+  const model = modelName.toLowerCase();
+  const mentionsModel = haystack.includes(model);
+
+  if (mentionsModel) {
+    return (
+      haystack.includes('unknown model') ||
+      haystack.includes('model does not exist') ||
+      haystack.includes('keyerror')
+    );
+  }
+
+  return haystack.includes('unknown model') || haystack.includes('model does not exist');
+}
+
 
   private static stringifyError(error: unknown): string {
     if (error instanceof Error) {
@@ -377,17 +412,18 @@ export class FleetFuelLogModel {
     const pricePerLiter = record.price_per_liter ?? 0;
 
     const gallons = FleetFuelLogModel.litersToGallons(liters);
-    const pricePerGallon = FleetFuelLogModel.pricePerLiterToPerGallon(pricePerLiter);
+    const pricePerGallonDollars = FleetFuelLogModel.pricePerLiterToPerGallon(pricePerLiter);
 
-    const totalCost = FleetFuelLogModel.roundCurrency(record.amount ?? gallons * pricePerGallon);
+    const pricePerGallonCents = dollarsToCents(pricePerGallonDollars);
+    const totalCostCents = dollarsToCents(record.amount ?? gallons * pricePerGallonDollars);
 
     return {
       id: record.id,
       vehicleId,
       date,
       gallons,
-      pricePerGallon,
-      totalCost,
+      pricePerGallonCents,
+      totalCostCents,
       odometer: record.odometer,
     };
   }
@@ -432,10 +468,6 @@ export class FleetFuelLogModel {
 
   private static pricePerLiterToPerGallon(pricePerLiter: number): number {
     return pricePerLiter * 3.78541;
-  }
-
-  private static roundCurrency(value: number): number {
-    return Math.round(value * 100) / 100;
   }
 }
 

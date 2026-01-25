@@ -61,9 +61,20 @@ export interface HosEnvContract {
   hosRuleset: 'FMCSA';
 }
 
+/**
+ * Optional test-run metadata used to suffix created entities in shared DEMO/CI.
+ *
+ * RUN_SUFFIX is preferred; if not set, TEST_RUN_ID may be used.
+ */
+export interface TestRunEnvContract {
+  runSuffix?: string;
+  testRunId?: string;
+}
+
 /** Full contract (superset) for environments that want to provide everything. */
 export type ServiceEnvContract =
   FinanceEnvContract &
   OfflineSyncEnvContract &
   CtiEnvContract &
-  HosEnvContract;
+  HosEnvContract &
+  TestRunEnvContract;

@@ -15,6 +15,11 @@ import { HttpResponse } from '../types/api';
 import { PgClient } from '../db/PgClient';
 import { AsteriskMockClient } from '../api/clients/AsteriskMockClient';
 import { CouchClient } from '../db/CouchClient';
+import type { FleetModels } from '../types/fleet';
+import { FleetVehicleModel } from '../api/models/fleet/FleetVehicleModel';
+import { FleetFuelLogModel } from '../api/models/fleet/FleetFuelLogModel';
+import { FleetInspectionModel } from '../api/models/fleet/FleetInspectionModel';
+import { FleetServiceModel } from '../api/models/fleet/FleetServiceModel';
 
 /**
  * World parameters passed from cucumber.config.ts
@@ -64,12 +69,36 @@ export class CustomWorld extends World<WorldParameters> {
   // Test data storage - use Map for type-safe key-value storage
   testData: Map<string, unknown> = new Map();
 
+  private _fleetModels?: FleetModels;
+
   // Scenario metadata
   scenarioName: string = '';
   featureName: string = '';
 
   constructor(options: IWorldOptions<WorldParameters>) {
     super(options);
+  }
+
+  /**
+   * Lazy-initialized Fleet model adapters.
+   *
+   * Steps should prefer this getter over instantiating models directly.
+   */
+  get fleet(): FleetModels {
+    if (!this._fleetModels) {
+      if (!this.odooApi) {
+        throw new Error('CustomWorld.fleet: odooApi is not initialized');
+      }
+
+      this._fleetModels = {
+        vehicle: new FleetVehicleModel(this.odooApi),
+        fuel: new FleetFuelLogModel(this.odooApi),
+        inspection: new FleetInspectionModel(this.odooApi),
+        service: new FleetServiceModel(this.odooApi),
+      };
+    }
+
+    return this._fleetModels;
   }
 
   /**

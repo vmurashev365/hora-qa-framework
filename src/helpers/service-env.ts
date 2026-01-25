@@ -66,6 +66,9 @@ export function getServiceEnv(): ServiceEnvContract {
     eldApiBaseUrl: optional(process.env.ELD_API_BASE_URL),
     eldApiToken: optional(process.env.ELD_API_TOKEN),
     hosRuleset: (process.env.HOS_RULESET as HosEnvContract['hosRuleset']) || 'FMCSA',
+
+    runSuffix: optional(process.env.RUN_SUFFIX),
+    testRunId: optional(process.env.TEST_RUN_ID),
   };
 }
 

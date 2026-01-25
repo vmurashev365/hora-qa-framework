@@ -278,23 +278,42 @@ export class FleetInspectionModel {
     }
   }
 
-  private static isMissingModelError(error: unknown, modelName: string): boolean {
-    const haystack = FleetInspectionModel.stringifyError(error);
-    if (haystack.includes(modelName)) {
-      // Common Odoo responses include the unknown model in message/debug.
-      return true;
-    }
+private static isMissingModelError(error: unknown, modelName: string): boolean {
+  const haystack = FleetInspectionModel.stringifyError(error).toLowerCase();
 
-    if (error instanceof OdooApiError) {
-      const msg = error.data?.message ?? '';
-      if (msg.includes(modelName)) {
-        return true;
-      }
-      return msg.includes('Unknown') || msg.includes('unknown');
-    }
-
+  // Never treat auth/access/permission failures as a missing-model signal.
+  if (
+    haystack.includes('accesserror') ||
+    haystack.includes('access denied') ||
+    haystack.includes('permission') ||
+    haystack.includes('not allowed') ||
+    haystack.includes('authentication') ||
+    haystack.includes('not authenticated')
+  ) {
     return false;
   }
+
+  if (error instanceof OdooApiError) {
+    const exceptionType = error.getExceptionType();
+    if (exceptionType === 'AccessError' || exceptionType === 'AuthenticationError') {
+      return false;
+    }
+  }
+
+  const model = modelName.toLowerCase();
+  const mentionsModel = haystack.includes(model);
+
+  if (mentionsModel) {
+    return (
+      haystack.includes('unknown model') ||
+      haystack.includes('model does not exist') ||
+      haystack.includes('keyerror')
+    );
+  }
+
+  return haystack.includes('unknown model') || haystack.includes('model does not exist');
+}
+
 
   private static stringifyError(error: unknown): string {
     if (error instanceof Error) {
