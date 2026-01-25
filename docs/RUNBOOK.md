@@ -2,7 +2,8 @@
 
 ## Purpose
 
-This runbook provides operational guidance for troubleshooting common issues, maintaining the QA framework, and quick reference commands for daily tasks.
+This runbook provides operational guidance for troubleshooting common issues, maintaining the QA framework,
+and quick reference commands for daily tasks.
 
 **Target Audience**: QA Engineers, DevOps, Support Teams
 
@@ -943,9 +944,9 @@ If all commands succeed, framework is healthy ✅
 ## Resources
 
 - **Framework Repository**: [Internal GitLab/GitHub Link]
-- **Odoo Documentation**: https://www.odoo.com/documentation/17.0/
-- **Playwright Docs**: https://playwright.dev/
-- **Cucumber Docs**: https://cucumber.io/docs/cucumber/
+- **Odoo Documentation**: <https://www.odoo.com/documentation/17.0/>
+- **Playwright Docs**: <https://playwright.dev/>
+- **Cucumber Docs**: <https://cucumber.io/docs/cucumber/>
 - **Team Slack**: `#hora-qa-automation`
 - **On-Call Schedule**: [Link to PagerDuty/OpsGenie]
 

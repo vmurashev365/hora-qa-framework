@@ -4,6 +4,7 @@ You are working ONLY inside this repository. Do not invent missing files or feat
 Always start by reading the actual repo tree and existing configs BEFORE proposing changes.
 
 Hard rules:
+
 1) Preserve the current architecture: Cucumber BDD + layered steps + ui-map.
 2) Prefer minimal, surgical edits. Avoid refactors unless explicitly requested.
 3) Never change test semantics silently. If behavior changes, explain it and update docs/scripts.
@@ -19,6 +20,7 @@ Hard rules:
    - a short rationale per change.
 
 Scope guidance:
+
 - Primary runner is Cucumber. If @playwright/test exists, treat it as optional or remove only if safe and documented.
 - Community Odoo constraints are real: implement test data prep via strategy pattern; default is RPC if possible.
 - CI target: minimal smoke job + Allure artifacts.

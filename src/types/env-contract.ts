@@ -46,5 +46,24 @@ export interface CtiEnvContract {
   ctiWsPattern: string;
 }
 
+export interface HosEnvContract {
+  /** Enable demo-only behavior (no real backend). */
+  demoMode: boolean;
+  /** IANA timezone name (e.g. UTC). */
+  timezone: string;
+  /** ELD integration mode. */
+  eldMode: 'mock' | 'api';
+  /** Optional API base URL (required when eldMode=api). */
+  eldApiBaseUrl?: string;
+  /** Optional API token (required when eldMode=api). */
+  eldApiToken?: string;
+  /** HOS ruleset identifier (currently FMCSA only). */
+  hosRuleset: 'FMCSA';
+}
+
 /** Full contract (superset) for environments that want to provide everything. */
-export type ServiceEnvContract = FinanceEnvContract & OfflineSyncEnvContract & CtiEnvContract;
+export type ServiceEnvContract =
+  FinanceEnvContract &
+  OfflineSyncEnvContract &
+  CtiEnvContract &
+  HosEnvContract;

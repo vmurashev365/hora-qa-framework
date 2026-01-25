@@ -1,28 +1,41 @@
 # 3-Layer BDD Architecture
 
-The 3-Layer BDD Architecture consists of three main layers: **Atomic**, **Domain**, and **Composite**. This structure helps organize the test code and promotes a clear separation of concerns, improving maintainability and readability.
+The 3-Layer BDD Architecture consists of three main layers: **Atomic**, **Domain**, and **Composite**.
+This structure helps organize the test code and promotes a clear separation of concerns, improving maintainability and readability.
 
 ## 1. Atomic Layer
-The Atomic Layer provides the foundational steps that are reused across the Domain layer. 
 
-### Example:
+The Atomic Layer provides the foundational steps that are reused across the Domain layer.
+
+### Example (Atomic Layer)
+
 - **Navigation Steps:** Refer to `src/steps/atomic/navigation.steps.ts` for steps related to navigating the application.
 - **Interaction Steps:** Refer to `src/steps/atomic/interaction.steps.ts` for steps that handle user interactions.
 
 ## 2. Domain Layer
-The Domain Layer encapsulates business logic and uses the atomic steps to define scenarios that represent individual business processes.
 
-### Example:
-- **Authentication Steps:** Refer to `src/steps/domain/auth.steps.ts` for steps that pertain to user authentication logic, utilizing the atomic interactions.
+The Domain Layer encapsulates business logic and uses the atomic steps to define scenarios
+that represent individual business processes.
+
+### Example (Domain Layer)
+
+- **Authentication Steps:** Refer to `src/steps/domain/auth.steps.ts` for steps that pertain to user authentication logic,
+  utilizing the atomic interactions.
 
 ## 3. Composite Layer
-The Composite Layer combines multiple domain scenarios into more comprehensive workflows, handling complex user journeys that span across different domains.
 
-### Example:
-- **Vehicle Workflows Steps:** Refer to `src/steps/composite/vehicle-workflows.steps.ts` for combined workflows related to vehicle management.
+The Composite Layer combines multiple domain scenarios into more comprehensive workflows,
+handling complex user journeys that span across different domains.
+
+### Example (Composite Layer)
+
+- **Vehicle Workflows Steps:** Refer to `src/steps/composite/vehicle-workflows.steps.ts`
+  for combined workflows related to vehicle management.
 
 ## Feature Snippet
-### Before:
+
+### Before
+
 ```gherkin
 Feature: User Authentication
   Scenario: Successful login
@@ -31,7 +44,8 @@ Feature: User Authentication
     Then I should be logged in
 ```
 
-### After:
+### After
+
 ```gherkin
 Feature: User Authentication
   Scenario: Successful login and vehicle management

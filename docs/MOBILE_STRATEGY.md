@@ -2,7 +2,10 @@
 
 ## Executive Summary
 
-This document outlines the strategy for implementing mobile test automation for the **UE Line Driver Application**, a critical component of Hora Services' fleet management ecosystem. The mobile app enables 200+ truck drivers to receive dispatches, scan bills of lading, update odometer readings, and communicate with dispatch centers.
+This document outlines the strategy for implementing mobile test automation for the **UE Line Driver Application**,
+a critical component of Hora Services' fleet management ecosystem.
+The mobile app enables 200+ truck drivers to receive dispatches, scan bills of lading, update odometer readings,
+and communicate with dispatch centers.
 
 **Current Status**: Phase 1 (Architecture Design) ✅ Complete  
 **Next Phase**: Phase 2 (Implementation) ⏳ Pending APK/IPA access  
@@ -45,7 +48,7 @@ This document outlines the strategy for implementing mobile test automation for 
 
 ### Technology Stack
 
-```
+```text
 ┌─────────────────────────────────────────────┐
 │           Test Framework Layer              │
 │  Cucumber + TypeScript + WebDriverIO        │
@@ -66,7 +69,7 @@ This document outlines the strategy for implementing mobile test automation for 
 
 ### Project Structure (Planned)
 
-```
+```text
 src/
 ├── mobile/
 │   ├── config/
@@ -722,10 +725,10 @@ jobs:
 
 ## References
 
-- **Appium Documentation**: https://appium.io/docs/en/2.0/
-- **WebDriverIO Guide**: https://webdriver.io/docs/gettingstarted
-- **React Native Testing**: https://reactnative.dev/docs/testing-overview
-- **Mobile Testing Best Practices**: https://www.browserstack.com/guide/mobile-testing-best-practices
+- **Appium Documentation**: <https://appium.io/docs/en/2.0/>
+- **WebDriverIO Guide**: <https://webdriver.io/docs/gettingstarted>
+- **React Native Testing**: <https://reactnative.dev/docs/testing-overview>
+- **Mobile Testing Best Practices**: <https://www.browserstack.com/guide/mobile-testing-best-practices>
 
 ---
 

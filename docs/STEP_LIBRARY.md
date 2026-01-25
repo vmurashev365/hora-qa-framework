@@ -2,11 +2,15 @@
 
 ## Introduction
 
-This guide is designed for **Product Owners** and non-technical team members who want to write automated tests without coding. The Hora Services QA Framework uses a **Behavior-Driven Development (BDD)** approach where tests are written in plain English using **Gherkin** syntax.
+This guide is designed for **Product Owners** and non-technical team members who want to write automated tests without coding.
+The Hora Services QA Framework uses a **Behavior-Driven Development (BDD)** approach where tests are written
+in plain English using **Gherkin** syntax.
 
 ### What is This?
 
-This document lists all available test steps (commands) you can use to build test scenarios. Each step performs a specific action like clicking a button, filling a form field, or checking if text appears on the screen.
+This document lists all available test steps (commands) you can use to build test scenarios.
+Each step performs a specific action like clicking a button, filling a form field,
+or checking if text appears on the screen.
 
 ### How to Use This Guide
 
@@ -68,7 +72,9 @@ Fill, clear, and interact with form fields.
 
 **Available fieldKeys**:
 
-**Vehicle Fields**: `licensePlate`, `model`, `modelName`, `vehicleType`, `driver`, `assignedDriver`, `odometer`, `currentOdometer`, `acquisitionDate`, `immatriculation`, `firstContractDate`, `vin`, `fuelType`, `color`, `seats`, `doors`, `brand`, `horsepower`, `horsepowerTax`, `power`, `co2`, `category`, `tags`
+**Vehicle Fields**: `licensePlate`, `model`, `modelName`, `vehicleType`, `driver`, `assignedDriver`, `odometer`, `currentOdometer`,
+`acquisitionDate`, `immatriculation`, `firstContractDate`, `vin`, `fuelType`, `color`, `seats`, `doors`, `brand`, `horsepower`,
+`horsepowerTax`, `power`, `co2`, `category`, `tags`
 
 **Driver Fields**: `driverName`, `driverPhone`, `driverMobile`, `driverEmail`, `driverCompany`, `driverDepartment`
 
@@ -284,13 +290,13 @@ The framework uses **UI-MAP pattern** to decouple tests from UI changes. Always 
 
 **Page Keys** (for navigation):
 
-```
+```text
 login, vehicles, vehicleForm, drivers, driverForm, dashboard, home
 ```
 
 **Field Keys** (for form filling):
 
-```
+```text
 licensePlate, model, modelName, vehicleType, driver, assignedDriver,
 odometer, currentOdometer, acquisitionDate, immatriculation,
 firstContractDate, vin, fuelType, color, seats, doors, brand,
@@ -301,7 +307,7 @@ driverDepartment, login, email, password, name, description, notes
 
 **Button Keys** (for clicking):
 
-```
+```text
 create, new, save, edit, discard, discardChanges, delete, archive,
 unarchive, duplicate, search, filter, groupBy, favorites, back,
 cancel, close, confirm, ok, login, logout, print, export, import,
@@ -310,7 +316,7 @@ send, refresh, newRequest, assignDriver, unassignDriver, logOdometer
 
 **Message Keys** (for assertions):
 
-```
+```text
 vehicleSaved, driverAssigned, vehicleDeleted, loginSuccess,
 loginFailed, validationError, accessDenied, recordCreated
 ```
@@ -319,7 +325,7 @@ loginFailed, validationError, accessDenied, recordCreated
 
 ## Tips for Writing Tests
 
-### ✅ DO:
+### ✅ DO
 
 - Use descriptive scenario names that explain the business value
 - Tag scenarios appropriately (`@smoke`, `@critical`, `@api`, `@web`)
@@ -327,7 +333,7 @@ loginFailed, validationError, accessDenied, recordCreated
 - Clean up test data after scenarios
 - Use meaningful test data (e.g., `MD-TEST-001`, not `XXX`)
 
-### ❌ DON'T:
+### ❌ DON'T
 
 - Hardcode exact UI labels (use UI-MAP keys instead)
 - Create tests that depend on each other

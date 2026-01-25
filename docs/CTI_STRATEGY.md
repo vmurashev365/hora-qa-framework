@@ -27,7 +27,7 @@ For automated testing, mocking provides 95% of the value at 5% of the cost.
 
 ### Real-World Scenario
 
-```
+```text
 Dispatcher sees driver "John Smith" running late for pickup
 ↓
 Clicks phone icon next to driver name in Odoo
@@ -81,7 +81,7 @@ Call details logged in Odoo (duration, recording URL, outcome)
 
 ### High-Level Design
 
-```
+```text
 ┌──────────────────────────────────────────────────────────┐
 │                    Odoo Fleet Web UI                     │
 │  (Dispatcher clicks "Call Driver" button)                │
@@ -777,11 +777,11 @@ The mock CTI strategy provides:
 
 ## References
 
-- **Asterisk Documentation**: https://www.asterisk.org/get-started/
-- **FreePBX**: https://www.freepbx.org/
-- **Twilio Voice API**: https://www.twilio.com/docs/voice
-- **AWS Connect**: https://aws.amazon.com/connect/
-- **Socket.io**: https://socket.io/docs/
+- **Asterisk Documentation**: <https://www.asterisk.org/get-started/>
+- **FreePBX**: <https://www.freepbx.org/>
+- **Twilio Voice API**: <https://www.twilio.com/docs/voice>
+- **AWS Connect**: <https://aws.amazon.com/connect/>
+- **Socket.io**: <https://socket.io/docs/>
 
 ---
 

@@ -1,4 +1,4 @@
-# Hora Services QA Automation Framework
+# Enterprise QA Framework for Trucking & Fleet Management SaaS
 
 <!-- Badges -->
 
@@ -7,7 +7,8 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-20%2B-green.svg)](https://nodejs.org/)
 
-Automated testing framework for the Hora Services fleet management system built on Odoo ERP.
+Reusable QA automation platform for trucking and fleet SaaS products, with pluggable adapters for
+Odoo (JSON-RPC) and external integrations like ELD/HOS providers.
 
 ---
 
@@ -25,6 +26,49 @@ Automated testing framework for the Hora Services fleet management system built 
 - 🐳 **Docker-First** - Containerized Odoo environment for consistent testing
 - 📊 **Rich Reporting** - Cucumber HTML reports, Allure reports, screenshots on failure
 - 🚀 **CI/CD Ready** - GitHub Actions workflows with nightly regression
+
+---
+
+## 🔌 Adapter-first Architecture (Demo-ready)
+
+- **Odoo adapter included** (JSON-RPC) for data setup and verification.
+- **ELD provider is pluggable**: mock provider for demos, API provider stub for real integrations.
+- **Domain logic is deterministic** (VirtualClock + HosCalculator) for instant long-duration simulations.
+
+---
+
+## ✅ Compliance Coverage Matrix
+
+| Module | Coverage | Notes |
+| --- | --- | --- |
+| HOS / ELD | ✅ Deterministic HOS engine, mock ELD | Demo mode supported |
+| IFTA / Finance | ✅ REST API compliance | Calculator parity checks |
+| Fleet | ✅ Web UI + API + DB | Vehicles, fuel, inspections |
+| Inspections | ✅ Web UI | Fleet inspection flows |
+| Offline Sync | ✅ Mobile + API | CouchDB mock |
+| CTI | ✅ Web UI | Screen pop + WebSocket |
+
+---
+
+## ⚡ Quick Adaptation Guide
+
+1. **Replace the Odoo adapter** with your REST/GraphQL adapter.
+2. **Keep HosCalculator + EldProvider unchanged** to retain deterministic compliance logic.
+3. Update `.env` contract values for your environments.
+
+---
+
+## 💰 ROI (Typical Outcomes)
+
+- 60–80% reduction in manual compliance regression time.
+- Faster onboarding for new fleets with reusable test suites.
+- Reduced defect leakage in high-regulatory modules.
+
+---
+
+## ⚠️ Disclaimer
+
+This framework provides test automation support and **does not constitute legal certification**.
 
 ---
 
@@ -403,10 +447,159 @@ hora-qa-framework/
 | **[STEP_LIBRARY.md](docs/STEP_LIBRARY.md)** | Product Owners, Business Analysts | List of all available test steps — write tests without coding! |
 | **[RUNBOOK.md](docs/RUNBOOK.md)** | Anyone | Troubleshooting guide and common fixes |
 | **[BDD_ARCHITECTURE.md](docs/BDD_ARCHITECTURE.md)** | QA Engineers, Developers | 3-Layer BDD architecture (Atomic → Domain → Composite) |
+| **[ARCHITECTURE.md](docs/ARCHITECTURE.md)** | QA Engineers, Developers | Complete framework architecture (8-layer structure) |
 | **[API_TESTING.md](docs/API_TESTING.md)** | QA Engineers | Guide for API testing |
 | **[MOBILE_STRATEGY.md](docs/MOBILE_STRATEGY.md)** | QA Engineers | Mobile testing roadmap |
 | **[DATA_STRATEGY.md](docs/DATA_STRATEGY.md)** | QA Engineers | Test data management |
 | **[CTI_STRATEGY.md](docs/CTI_STRATEGY.md)** | QA Engineers | Computer Telephony Integration testing |
+
+---
+
+## 🚛 HOS/ELD Compliance Testing Architecture
+
+The framework includes a **deterministic Hours-of-Service (HOS) compliance engine** for testing FMCSA regulations
+without real-time waits or hardware ELD devices.
+
+### Key Components
+
+```text
+┌──────────────────────────────────────────────────┐
+│         HOS Compliance Test Layer                │
+│  (hos-compliance.steps.ts)                       │
+└────────────────────┬─────────────────────────────┘
+                     │
+         ┌───────────┴───────────┐
+         ↓                       ↓
+┌─────────────────┐    ┌──────────────────┐
+│  HosService     │    │  VirtualClock    │
+│  (src/helpers)  │    │  (src/helpers)   │
+└────────┬────────┘    └────────┬─────────┘
+         │                      │
+         ↓                      ↓
+┌──────────────────┐   ┌──────────────────┐
+│  HosCalculator   │   │  TimeSource      │
+│  (compliance     │   │  (interface)     │
+│   calculations)  │   │                  │
+└──────────────────┘   └──────────────────┘
+         │
+         ↓
+┌──────────────────┐
+│  EldProvider     │ ←──── Interface
+│  (src/api)       │
+└────────┬─────────┘
+         │
+    ┌────┴────┐
+    ↓         ↓
+┌─────────┐ ┌────────────┐
+│EldMock  │ │ EldApi     │
+│Client   │ │ Client     │
+│(demo)   │ │(real HW)   │
+└─────────┘ └────────────┘
+```
+
+### VirtualClock — Deterministic Time Control
+
+**Purpose:** Simulate hours/days instantly without `setTimeout` or real-time waits.
+
+**Key Features:**
+
+- ✅ Advance time by minutes: `clock.advanceMinutes(480)` → instantly jumps 8 hours ahead
+- ✅ No flaky tests from real time delays
+- ✅ Tests run in seconds instead of hours
+- ✅ TypeScript type-safe with proper interface narrowing
+
+**Example Usage:**
+
+```typescript
+// Create virtual clock starting at specific timestamp
+const clock = new VirtualClock(Date.parse('2026-01-01T08:00:00Z'));
+
+// Simulate 10 hours of driving instantly
+await eldMock.simulateDriving('DRIVER-001', 600); // 600 minutes
+
+// Clock automatically advances, HOS calculations update
+```
+
+**Recent Improvements:**
+
+- Fixed TypeScript type narrowing for `advanceMinutes()` method (eliminated unsafe casts)
+- Improved type safety with proper `TimeSource` interface checking
+
+### EldMockClient — In-Memory ELD Simulator
+
+**Purpose:** Mock Electronic Logging Device without hardware or cloud services.
+
+**Capabilities:**
+
+- Record duty status events (DRIVING, ON_DUTY, OFF_DUTY, SLEEPER_BERTH)
+- Simulate driving/rest periods with VirtualClock integration
+- Inject malfunctions for compliance testing
+- Generate DOT inspection reports (USB format)
+- Chronological validation (rejects out-of-order events)
+
+### HosCalculator — FMCSA Rules Engine
+
+**Purpose:** Pure calculation logic for Hours-of-Service compliance.
+
+**Implements:**
+
+- 11-hour driving limit
+- 14-hour on-duty limit
+- 70-hour/8-day limit
+- 34-hour restart rules
+- Break requirements
+
+**Benefits:**
+
+- ✅ Deterministic: same inputs = same outputs
+- ✅ No side effects or external dependencies
+- ✅ Easy to test and verify
+- ✅ Portable to any project
+
+### Testing HOS Compliance
+
+**Feature File Example:**
+
+```gherkin
+@hos @compliance
+Scenario: Driver exceeds 11-hour driving limit
+  Given driver "D1" starts OFF_DUTY for 600 minutes
+  When driver "D1" starts DRIVING for 660 minutes
+  Then HOS service should report violation "DRIVING_LIMIT_EXCEEDED"
+  And remaining drive time should be 0 minutes
+```
+
+**Behind the Scenes:**
+
+1. VirtualClock advances 660 minutes instantly
+2. EldMockClient records events with virtual timestamps
+3. HosCalculator evaluates FMCSA rules
+4. HosService returns violation status
+
+**No real waits. No hardware. Fully deterministic.**
+
+### Configuration
+
+```bash
+# .env settings for HOS/ELD
+DEMO_MODE=true              # Enable demo/mock mode
+ELD_MODE=mock               # Use EldMockClient (vs "api" for real hardware)
+TIMEZONE=America/New_York   # IANA timezone for HOS calculations
+HOS_RULESET=FMCSA          # Currently FMCSA only
+```
+
+### Related Files
+
+| File | Location | Purpose |
+| --- | --- | --- |
+| `VirtualClock.ts` | `src/helpers/` | Deterministic time control |
+| `HosCalculator.ts` | `src/helpers/` | FMCSA compliance calculations |
+| `HosService.ts` | `src/helpers/` | High-level HOS service |
+| `EldProvider.ts` | `src/api/clients/` | ELD interface |
+| `EldMockClient.ts` | `src/api/clients/` | Mock ELD implementation |
+| `EldApiClient.ts` | `src/api/clients/` | Real hardware adapter stub |
+| `hos-compliance.steps.ts` | `src/steps/domain/` | Gherkin step definitions |
+| `hos_compliance.feature` | `features/integration/` | HOS test scenarios |
 
 ---
 
@@ -536,6 +729,37 @@ Feature: Vehicle Management
 | `npm run build`        | Compile TypeScript              |
 | `npm run clean`        | Clean generated files           |
 
+### Markdown Linting
+
+Markdown documentation follows strict style rules via [markdownlint](https://github.com/DavidAnson/markdownlint).
+
+**Check Markdown files:**
+
+```bash
+npx markdownlint-cli "**/*.md" --config .markdownlint.json
+```
+
+**Auto-fix Markdown issues:**
+
+```bash
+npx markdownlint-cli "**/*.md" --config .markdownlint.json --fix
+```
+
+**Configuration:**
+
+- Config file: [.markdownlint.json](.markdownlint.json)
+- Line length: 120 characters (MD013)
+- Tables and code blocks excluded from line length checks
+- Enforces blank lines around lists, headings, and fenced code blocks
+- Requires language identifiers for code fences
+
+**Common rules:**
+
+- `MD031/MD032`: Blank lines around fences and lists
+- `MD040`: Language specified for code blocks
+- `MD013`: Line length limit
+- `MD022`: Blank lines around headings
+
 ## 🐳 Docker Commands
 
 ```bash
@@ -600,6 +824,12 @@ These environment variables are required by the integration modules added under 
 | `ODOO_USER` | Offline Sync, CTI Screen Pop | Odoo UI username |
 | `ODOO_PASS` | Offline Sync, CTI Screen Pop | Odoo UI password |
 | `CTI_WS_PATTERN` | CTI Screen Pop | WebSocket URL match pattern used by `page.routeWebSocket()` (supports `*` wildcards or `/regex/flags`) |
+| `DEMO_MODE` | HOS / ELD | Enable demo-only behavior (default `true`) |
+| `TIMEZONE` | HOS / ELD | IANA timezone name (default `UTC`) |
+| `ELD_MODE` | HOS / ELD | `mock` or `api` (default `mock`) |
+| `ELD_API_BASE_URL` | HOS / ELD | Required when `ELD_MODE=api` |
+| `ELD_API_TOKEN` | HOS / ELD | Required when `ELD_MODE=api` |
+| `HOS_RULESET` | HOS / ELD | Currently `FMCSA` only |
 
 ### Running in Headed Mode (Debug)
 

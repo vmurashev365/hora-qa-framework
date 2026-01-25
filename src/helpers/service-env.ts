@@ -10,6 +10,7 @@ import type {
   FinanceEnvContract,
   OfflineSyncEnvContract,
   CtiEnvContract,
+  HosEnvContract,
 } from '../types/env-contract';
 
 // Ensure .env is loaded (env.ts performs dotenv.config at import time).
@@ -26,6 +27,11 @@ function required(name: string, value: string | undefined): string {
 function optional(value: string | undefined): string | undefined {
   const v = value?.trim();
   return v ? v : undefined;
+}
+
+function parseBoolean(value: string | undefined, defaultValue: boolean): boolean {
+  if (value === undefined) return defaultValue;
+  return value.toLowerCase() === 'true';
 }
 
 /**
@@ -53,6 +59,13 @@ export function getServiceEnv(): ServiceEnvContract {
     financeIftaEndpoint: required('FINANCE_IFTA_ENDPOINT', process.env.FINANCE_IFTA_ENDPOINT),
 
     loadStatusEndpoint: required('LOAD_STATUS_ENDPOINT', process.env.LOAD_STATUS_ENDPOINT),
+
+    demoMode: parseBoolean(process.env.DEMO_MODE, true),
+    timezone: process.env.TIMEZONE || 'UTC',
+    eldMode: (process.env.ELD_MODE as HosEnvContract['eldMode']) || 'mock',
+    eldApiBaseUrl: optional(process.env.ELD_API_BASE_URL),
+    eldApiToken: optional(process.env.ELD_API_TOKEN),
+    hosRuleset: (process.env.HOS_RULESET as HosEnvContract['hosRuleset']) || 'FMCSA',
   };
 }
 
@@ -97,5 +110,32 @@ export function getCtiEnv(): CtiEnvContract {
     odooUser: required('ODOO_USER', odooUser),
     odooPass: required('ODOO_PASS', odooPass),
     ctiWsPattern: required('CTI_WS_PATTERN', process.env.CTI_WS_PATTERN),
+  };
+}
+
+export function getHosEnv(): HosEnvContract {
+  const demoMode = parseBoolean(process.env.DEMO_MODE, true);
+  const eldMode = (process.env.ELD_MODE as HosEnvContract['eldMode']) || 'mock';
+  const timezone = process.env.TIMEZONE || 'UTC';
+  const hosRuleset = (process.env.HOS_RULESET as HosEnvContract['hosRuleset']) || 'FMCSA';
+
+  if (eldMode === 'api') {
+    return {
+      demoMode,
+      timezone,
+      eldMode,
+      eldApiBaseUrl: required('ELD_API_BASE_URL', process.env.ELD_API_BASE_URL),
+      eldApiToken: required('ELD_API_TOKEN', process.env.ELD_API_TOKEN),
+      hosRuleset,
+    };
+  }
+
+  return {
+    demoMode,
+    timezone,
+    eldMode,
+    eldApiBaseUrl: optional(process.env.ELD_API_BASE_URL),
+    eldApiToken: optional(process.env.ELD_API_TOKEN),
+    hosRuleset,
   };
 }

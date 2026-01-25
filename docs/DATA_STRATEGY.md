@@ -2,7 +2,10 @@
 
 ## Executive Summary
 
-This document defines the comprehensive strategy for managing test data throughout the QA lifecycle in the Hora Services framework. Proper data management is critical for test reliability, maintainability, and compliance with data protection regulations (GDPR, CCPA).
+This document defines the comprehensive strategy for managing test data throughout the QA lifecycle
+in the Hora Services framework.
+Proper data management is critical for test reliability, maintainability,
+and compliance with data protection regulations (GDPR, CCPA).
 
 **Core Principles**:
 
@@ -18,7 +21,7 @@ This document defines the comprehensive strategy for managing test data througho
 
 ### The Three Phases
 
-```
+```text
 ┌──────────────┐      ┌──────────────┐      ┌──────────────┐
 │   CREATION   │  →   │    USAGE     │  →   │   CLEANUP    │
 │              │      │              │      │              │
@@ -115,7 +118,7 @@ Scenario: View demo vehicles
 
 **Structure**:
 
-```
+```text
 tests/
 └── fixtures/
     ├── vehicles/
@@ -763,27 +766,27 @@ async function seedVehiclesBulk(count: number) {
 
 ### Usage
 
-6. **Avoid hardcoded test data** that may not exist
-7. **Query before asserting** (don't assume data exists)
-8. **Use data-driven tests** for variations (Scenario Outline)
-9. **Test with edge case data** (empty strings, max lengths, special characters)
-10. **Store created IDs** for cleanup and validation
+1. **Avoid hardcoded test data** that may not exist
+2. **Query before asserting** (don't assume data exists)
+3. **Use data-driven tests** for variations (Scenario Outline)
+4. **Test with edge case data** (empty strings, max lengths, special characters)
+5. **Store created IDs** for cleanup and validation
 
 ### Cleanup
 
-11. **Clean up in AfterEach**, not just AfterAll (prevents accumulation)
-12. **Delete in reverse order** of creation (handle foreign keys)
-13. **Use try-finally blocks** to ensure cleanup even on failure
-14. **Log cleanup actions** for debugging orphaned data
-15. **Verify cleanup succeeded** (query to ensure deletion)
+1. **Clean up in AfterEach**, not just AfterAll (prevents accumulation)
+2. **Delete in reverse order** of creation (handle foreign keys)
+3. **Use try-finally blocks** to ensure cleanup even on failure
+4. **Log cleanup actions** for debugging orphaned data
+5. **Verify cleanup succeeded** (query to ensure deletion)
 
 ### Security & Compliance
 
-16. **Never use production data** in tests
-17. **Anonymize PII** with faker.js
-18. **Mark test data** with flag (`x_is_test_data: true`)
-19. **Never commit credentials** (use `.env`)
-20. **Implement data retention policies** (auto-delete after N days)
+1. **Never use production data** in tests
+2. **Anonymize PII** with faker.js
+3. **Mark test data** with flag (`x_is_test_data: true`)
+4. **Never commit credentials** (use `.env`)
+5. **Implement data retention policies** (auto-delete after N days)
 
 ---
 
@@ -931,10 +934,10 @@ Effective test data management:
 
 ## References
 
-- **Faker.js**: https://fakerjs.dev/
-- **PostgreSQL Transactions**: https://www.postgresql.org/docs/current/tutorial-transactions.html
-- **GDPR Compliance**: https://gdpr.eu/
-- **Data Factory Pattern**: https://martinfowler.com/bliki/ObjectMother.html
+- **Faker.js**: <https://fakerjs.dev/>
+- **PostgreSQL Transactions**: <https://www.postgresql.org/docs/current/tutorial-transactions.html>
+- **GDPR Compliance**: <https://gdpr.eu/>
+- **Data Factory Pattern**: <https://martinfowler.com/bliki/ObjectMother.html>
 
 ---
 
