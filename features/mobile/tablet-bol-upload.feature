@@ -1,4 +1,4 @@
-@tablet @critical
+@tablet @critical @module_loads
 Feature: Tablet BOL Upload
   As a fleet driver or owner-operator
   I want to upload Bill of Lading documents from my tablet

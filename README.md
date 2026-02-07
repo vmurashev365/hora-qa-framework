@@ -251,6 +251,7 @@ Module tags (use these to run specific functional areas):
 - `@module_finance` (Financial Compliance)
 - `@module_offline_sync` (Offline Sync)
 - `@module_cti` (CTI Screen Pop)
+- `@module_loads` (Loads / BOL upload flows)
 
 Note: `npm run test:integration` excludes module-tagged scenarios by default. Run module suites directly when the required external env/config is available.
 

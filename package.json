@@ -8,7 +8,7 @@
   },
   "scripts": {
     "test": "npm run test:smoke",
-    "test:smoke": "cucumber-js --config cucumber.js --tags \"@smoke and not @api\"",
+    "test:smoke": "cucumber-js --config cucumber.js --tags \"@smoke and not @api and not @module_loads\"",
     "test:api": "cucumber-js --config cucumber.js --tags \"@api\"",
     "test:api:smoke": "cucumber-js --config cucumber.js --tags \"@api-smoke\"",
     "test:web": "cucumber-js --config cucumber.js features/web --tags \"@web\"",
