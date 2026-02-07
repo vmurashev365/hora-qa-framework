@@ -35,7 +35,7 @@ jobs:
         run: npx playwright install chromium
       
       - name: Start Docker services
-        run: docker-compose up -d
+        run: docker compose up -d
       
       - name: Wait for Odoo to be ready
         run: |
@@ -65,7 +65,7 @@ jobs:
       
       - name: Stop Docker services
         if: always()
-        run: docker-compose down
+        run: docker compose down
 
   api-tests:
     runs-on: ubuntu-latest
@@ -85,7 +85,7 @@ jobs:
         run: npm ci
       
       - name: Start Docker services
-        run: docker-compose up -d
+        run: docker compose up -d
       
       - name: Wait for Odoo
         run: |
@@ -111,7 +111,7 @@ jobs:
       
       - name: Stop Docker services
         if: always()
-        run: docker-compose down
+        run: docker compose down
 
   integration-tests:
     runs-on: ubuntu-latest
@@ -134,7 +134,7 @@ jobs:
         run: npx playwright install chromium
       
       - name: Start Docker services
-        run: docker-compose up -d
+        run: docker compose up -d
       
       - name: Wait for Odoo
         run: |
@@ -162,7 +162,7 @@ jobs:
       
       - name: Stop Docker services
         if: always()
-        run: docker-compose down
+        run: docker compose down
 
   nightly-regression:
     if: github.event_name == 'schedule'
@@ -194,7 +194,7 @@ jobs:
             allure-history-${{ github.workflow }}-${{ github.ref_name }}-
       
       - name: Start Docker services
-        run: docker-compose up -d
+        run: docker compose up -d
       
       - name: Wait for Odoo to be ready
         run: |
@@ -245,7 +245,7 @@ jobs:
       
       - name: Stop Docker services
         if: always()
-        run: docker-compose down -v
+        run: docker compose down -v
       
       - name: Notify on failure
         if: failure()

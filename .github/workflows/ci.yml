@@ -7,7 +7,7 @@ on:
 
 jobs:
   smoke:
-    name: smoke (docker-compose)
+    name: smoke (docker compose)
     runs-on: ubuntu-latest
 
     env:
