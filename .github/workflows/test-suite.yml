@@ -83,6 +83,9 @@ jobs:
       
       - name: Install dependencies
         run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium
       
       - name: Start Docker services
         run: docker compose up -d
