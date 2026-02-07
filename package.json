@@ -12,7 +12,7 @@
     "test:api": "cucumber-js --config cucumber.js --tags \"@api\"",
     "test:api:smoke": "cucumber-js --config cucumber.js --tags \"@api-smoke\"",
     "test:web": "cucumber-js --config cucumber.js features/web --tags \"@web\"",
-    "test:integration": "cucumber-js --config cucumber.js --tags \"@integration\"",
+    "test:integration": "cucumber-js --config cucumber.js --tags \"@integration and not @module_finance and not @module_offline_sync and not @module_cti\"",
     "test:security": "cucumber-js --config cucumber.js --tags \"@security\"",
     "test:tablet": "cucumber-js --config cucumber.js features/mobile --tags \"@tablet\"",
     "test:tablet:galaxy": "cucumber-js --config cucumber.js features/mobile --tags \"@galaxy-tab\"",

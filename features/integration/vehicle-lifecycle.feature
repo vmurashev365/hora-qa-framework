@@ -116,7 +116,7 @@ Feature: Complete Vehicle Lifecycle
   # ISTQB: True integration - UI creates data, CTI queries it
   # ============================================
 
-  @cti-integration @integration-006
+  @cti-integration @module_cti @integration-006
   Scenario: Incoming call triggers screen pop with vehicle info
     # PRECONDITION: Verify company phone is configured
     Given company phone is "+1800555000"
@@ -146,7 +146,7 @@ Feature: Complete Vehicle Lifecycle
     And last call should have caller "+1234567890"
     And CTI lookup should find driver "John Doe" for phone "+1234567890"
 
-  @cti-integration @integration-007
+  @cti-integration @module_cti @integration-007
   Scenario: Call lifecycle events are logged correctly
     # PRECONDITION: Verify company phone is configured
     Given company phone is "+1800555000"
@@ -172,7 +172,7 @@ Feature: Complete Vehicle Lifecycle
     And CTI event log should have 3 events
     And CTI lookup should find driver "Jane Smith" for phone "+1987654321"
 
-  @cti-integration @integration-008
+  @cti-integration @module_cti @integration-008
   Scenario: Unknown caller shows generic screen pop
     # PRECONDITION: Verify company phone is configured
     Given company phone is "+1800555000"
@@ -195,7 +195,7 @@ Feature: Complete Vehicle Lifecycle
   # OFFLINE SYNC TESTS
   # ============================================
 
-  @offline-sync @integration-009
+  @offline-sync @module_offline_sync @integration-009
   Scenario: Offline vehicle data syncs when connection restored
     # Create offline data
     Given I have offline data for vehicle "MD-OFF-001"
@@ -208,7 +208,7 @@ Feature: Complete Vehicle Lifecycle
     Then offline sync status should show "synced"
     And offline document "vehicle-MD-OFF-001" should exist
 
-  @offline-sync @integration-010
+  @offline-sync @module_offline_sync @integration-010
   Scenario: Offline conflict is resolved correctly
     # Create document with potential conflict
     Given I have offline data for vehicle "MD-CONFLICT-001"
@@ -221,7 +221,7 @@ Feature: Complete Vehicle Lifecycle
     And last conflict should be resolved with "local"
     And offline sync should have 1 conflicts
 
-  @offline-sync @integration-011
+  @offline-sync @module_offline_sync @integration-011
   Scenario: Multiple offline documents sync in batch
     # Create multiple offline documents
     Given I have offline data:

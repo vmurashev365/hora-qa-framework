@@ -236,7 +236,7 @@ These suites map directly to `package.json` scripts and Cucumber tag expressions
 | API | `@api` | `npm run test:api` |
 | API smoke | `@api-smoke` | `npm run test:api:smoke` |
 | Web UI | `@web` (scoped to `features/web`) | `npm run test:web` |
-| Integration | `@integration` | `npm run test:integration` |
+| Integration | `@integration` (excludes `@module_*`) | `npm run test:integration` |
 | Security | `@security` | `npm run test:security` |
 | Accessibility | `@accessibility` | `npm run test:accessibility` |
 | Tablet | `@tablet` (scoped to `features/mobile`) | `npm run test:tablet` |
@@ -251,6 +251,8 @@ Module tags (use these to run specific functional areas):
 - `@module_finance` (Financial Compliance)
 - `@module_offline_sync` (Offline Sync)
 - `@module_cti` (CTI Screen Pop)
+
+Note: `npm run test:integration` excludes module-tagged scenarios by default. Run module suites directly when the required external env/config is available.
 
 ### Running Specific Tests
 

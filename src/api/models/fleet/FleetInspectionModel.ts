@@ -298,6 +298,27 @@ private static isMissingModelError(error: unknown, modelName: string): boolean {
     if (exceptionType === 'AccessError' || exceptionType === 'AuthenticationError') {
       return false;
     }
+
+    const dataName = (error.data?.name ?? '').toLowerCase();
+    const dataMessage = (error.data?.message ?? '').toLowerCase();
+    const dataArgs = Array.isArray(error.data?.arguments)
+      ? error.data.arguments.map((value) => String(value).toLowerCase())
+      : [];
+
+    const model = modelName.toLowerCase();
+
+    if (dataName.includes('keyerror')) {
+      if (dataMessage.includes(model) || dataArgs.some((arg) => arg.includes(model))) {
+        return true;
+      }
+      if (haystack.includes(`keyerror: '${model}'`)) {
+        return true;
+      }
+    }
+
+    if (dataMessage.includes('unknown model') || dataMessage.includes('model does not exist')) {
+      return true;
+    }
   }
 
   const model = modelName.toLowerCase();
@@ -316,6 +337,20 @@ private static isMissingModelError(error: unknown, modelName: string): boolean {
 
 
   private static stringifyError(error: unknown): string {
+    if (error instanceof OdooApiError) {
+      const dataName = error.data?.name;
+      const dataMessage = error.data?.message;
+      const args = error.data?.arguments;
+      const debug = error.data?.debug;
+      const details = [
+        dataName ? `data.name=${String(dataName)}` : undefined,
+        dataMessage ? `data.message=${String(dataMessage)}` : undefined,
+        args ? `data.arguments=${JSON.stringify(args)}` : undefined,
+        debug ? `data.debug=${String(debug)}` : undefined,
+      ].filter(Boolean);
+      return `${error.name}: ${error.message}${details.length ? ` | ${details.join(' | ')}` : ''}`;
+    }
+
     if (error instanceof Error) {
       return `${error.name}: ${error.message}`;
     }
