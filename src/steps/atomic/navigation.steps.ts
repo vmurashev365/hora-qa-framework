@@ -104,6 +104,31 @@ Given('I login with username {string} and password {string}', { timeout: 30000 }
  * Supports both UI-MAP keys and legacy page names
  */
 When('I navigate to {string} page', { timeout: 30000 }, async function (this: CustomWorld, pageName: string) {
+  const normalizedPageKey = pageName.toLowerCase().replace(/\s+/g, '');
+
+  // Tablet/mobile optimized navigation: use bottom nav tabs when present
+  if (normalizedPageKey === 'loads') {
+    const loadsTabSelector = UI_MAP.tablet?.selectors?.navigation?.loadsTab;
+    if (loadsTabSelector) {
+      const loadsTab = this.page.locator(loadsTabSelector).first();
+      const isLoadsTabVisible = await loadsTab.isVisible({ timeout: 1500 }).catch(() => false);
+
+      if (isLoadsTabVisible) {
+        await loadsTab.click();
+
+        const loadCardSelector = UI_MAP.tablet?.selectors?.loadManagement?.loadCard;
+        if (loadCardSelector) {
+          await this.page.locator(loadCardSelector).first().waitFor({ state: 'visible', timeout: 15000 });
+        } else {
+          await this.page.waitForLoadState('domcontentloaded');
+        }
+
+        this.setTestData('currentPage', pageName);
+        return;
+      }
+    }
+  }
+
   // Check if user is logged in (Home Menu visible means logged in)
   const isLoggedIn = await this.page.getByTitle('Home Menu').isVisible({ timeout: 1000 }).catch(() => false);
   
@@ -116,7 +141,7 @@ When('I navigate to {string} page', { timeout: 30000 }, async function (this: Cu
   }
   
   // Try to resolve menu navigation from UI-MAP
-  const uiMapKey = pageName.toLowerCase().replace(/\s+/g, '');
+  const uiMapKey = normalizedPageKey;
   const menuNav = MENU_NAVIGATION[uiMapKey] || MENU_NAVIGATION[pageName];
   
   // Legacy menu navigation mapping (backward compatibility)

@@ -31,6 +31,7 @@ export const MENU_NAVIGATION: Record<string, { app: string; menuItem?: string }>
   vehicles: { app: 'Fleet' },
   drivers: { app: 'Fleet', menuItem: 'Drivers' },
   dashboard: { app: 'Fleet' },
+  loads: { app: 'Fleet', menuItem: 'Loads' },
 } as const;
 
 /**
