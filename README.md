@@ -233,7 +233,7 @@ These suites map directly to `package.json` scripts and Cucumber tag expressions
 | Suite | Primary tags (present in `features/**/*.feature`) | Command |
 | --- | --- | --- |
 | Smoke | `@smoke` (excludes `@api`) | `npm run test:smoke` |
-| API | `@api` | `npm run test:api` |
+| API | `@api` (excludes `@module_*` by default) | `npm run test:api` |
 | API smoke | `@api-smoke` | `npm run test:api:smoke` |
 | Web UI | `@web` (scoped to `features/web`) | `npm run test:web` |
 | Integration | `@integration` (excludes `@module_*`) | `npm run test:integration` |
@@ -253,7 +253,12 @@ Module tags (use these to run specific functional areas):
 - `@module_cti` (CTI Screen Pop)
 - `@module_loads` (Loads / BOL upload flows)
 
-Note: `npm run test:integration` excludes module-tagged scenarios by default. Run module suites directly when the required external env/config is available.
+Note: `npm run test:integration` excludes module-tagged scenarios by default.
+Run module suites directly when the required external env/config is available.
+
+Note: `npm run test:api` also excludes module-tagged scenarios by default.
+For example, finance compliance API tests require `API_BASE_URL` and related vars.
+Use the `test:module:*` scripts when the required external services and env vars are configured.
 
 ### Running Specific Tests
 
